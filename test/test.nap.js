@@ -87,5 +87,23 @@ describe("Nap", function(){
       fn.should.have.been.calledOnce
       fn.should.have.been.calledOn(ul)
     })
+    it("should should take callback for responses", function(){
+      var web = nap.web()
+        , cb = sinon.spy()
+
+      web.resource("/foo/bar", function(req, res){
+        res("where am i?")
+      })
+
+
+      web.req("/foo/bar", cb)
+
+      cb.should.have.been.calledOnce
+      cb.should.have.been.calledWith(false, {
+        uri : "/foo/bar"
+      , params : {}
+      , body : "where am i?"
+      })
+    })
   })
 })
