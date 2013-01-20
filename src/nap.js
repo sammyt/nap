@@ -23,15 +23,20 @@ function newWeb(){
     var req = pkg(path, match.params)
       , res = pkg(path, match.params)
       , args = [req]
+      , fn = match.fn
     
-    cb && args.push(responder(cb, res))
+    if(fn.length > 1) {
+      args.push(responder(cb, res))
+    }
+
     match.fn.apply(this, args)
     return web
   }
-  
+
   return web
 
   function responder(cb, res){
+    cb || (cb = function(){})
     return function(body){
       res.body = body
       cb(false, res)
