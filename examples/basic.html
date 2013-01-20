@@ -23,19 +23,30 @@
         s.select("span").text(req.params.name)
       }
 
+      function peas(req, res){
+        res(["a", "b", "c"])
+      }
+
+      // setup this web
       var web = nap.web()
         .resource("/foo/bar", bar)
         .resource("/foo/:thing/wibble", foo)
         .resource("/speak/:name", speak)
+        .resource("/peas", peas)
 
+      // make some requests
       web.req("/foo/bar")
       web.req("/foo/chips/wibble")
 
+      // create a view from a request
       d3.select(".message")
         .data(["/speak/sammy"])
         .select(web.req)
 
-      
+      // get some data from a request
+      web.req("/peas", function(err, res){
+        console.log(res.body)
+      })
     }
   </script>
   <title>Basic</title>
