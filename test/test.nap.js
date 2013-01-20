@@ -19,7 +19,7 @@ describe("Nap", function(){
       web.resource("/wibble", fn)
 
       web.resource("/wibble").should.be.ok
-      web.resource("/wibble").should.be.equal(fn)
+      web.resource("/wibble").handler.should.be.equal(fn)
       expect(other.resource("/wibble")).not.to.be.ok
     })
     it("should add resource with a name", function(){
@@ -29,7 +29,7 @@ describe("Nap", function(){
       web.resource("wobble", "/foo/bar", fn)
 
       web.resource("wobble").should.be.ok
-      web.resource("wobble").should.be.equal(fn)
+      web.resource("wobble").handler.should.be.equal(fn)
 
       web.req("/foo/bar")
       fn.should.have.been.calledOnce
@@ -41,7 +41,7 @@ describe("Nap", function(){
       web.resource("/foo/:val", fn)
 
       web.resource("/foo/:val").should.be.ok
-      web.resource("/foo/:val").should.be.equal(fn)
+      web.resource("/foo/:val").handler.should.be.equal(fn)
 
       web.req("/foo/bean")
       fn.should.have.been.calledOnce
@@ -103,6 +103,20 @@ describe("Nap", function(){
         uri : "/foo/bar"
       , params : {}
       , body : "where am i?"
+      })
+    })
+    describe("web.uri", function(){
+      it("should generate a uri based on a named resource", function(){
+        var web = nap.web()
+          .resource("demo", "/my-demo", function(){})
+
+        web.uri("demo").should.equal("/my-demo")
+      })
+      it("should generate a uri with params", function(){
+        var web = nap.web()
+          .resource("demo", "/my-demo/:id", function(){})
+
+        web.uri("demo", { id : "foo" }).should.equal("/my-demo/foo")
       })
     })
   })

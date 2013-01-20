@@ -21,7 +21,11 @@ function newWeb(){
       }
     }
 
-    resources[name] = handler
+    resources[name] = {
+      name : name
+    , ptn : ptn
+    , handler : handler
+    }
     
     tabs.add(ptn, function(params){
       return {
@@ -57,6 +61,24 @@ function newWeb(){
     if(!arguments.length) return view
     view = val
     return web
+  }
+
+  web.uri = function(name, params){
+    var meta = resources[name]
+
+    if(!meta) throw new Error(name + " not found")
+
+    var parts = tabs.parse(meta.ptn)
+
+    return parts.reduce(
+      function(uri, part){
+        if(part.type == "var"){
+          return [uri , params[part.input.substr(1)]].join("/")  
+        }
+        return [uri , part.input].join("/")  
+      }
+    , ""
+    )
   }
 
   return web
