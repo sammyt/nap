@@ -1,19 +1,11 @@
 (function(){
 
 nap = {}
-nap.web = createWeb
+nap.web = newWeb
 
-function createWeb(){
+function newWeb(){
   var web = {}
-
-  function request(path, params){
-    return { uri : path, params : params }
-  }
-
-  function response(path, params){
-    return { uri : path, params : params }
-  }
-
+  
   web.resource = function(path, handler){
     tabs.add(path, function(params){
       return {
@@ -24,21 +16,31 @@ function createWeb(){
     return web
   }
 
-  web.req = function(path, callback){
+  web.req = function(path, cb){
     var match = tabs.match(path)
     if(!match) throw Error("no match")
 
-    var req = request(path, match.params)
-      , res = response(path, match.params)
+    var req = pkg(path, match.params)
+      , res = pkg(path, match.params)
+      , args = [req]
     
-    function responder(body){
-      res.body = body
-      callback(false, res)
-    }
-    match.fn.apply(this, [req, responder])
+    cb && args.push(responder(cb, res))
+    match.fn.apply(this, args)
     return web
   }
+  
   return web
+
+  function responder(cb, res){
+    return function(body){
+      res.body = body
+      cb(false, res)
+    }
+  }
+
+  function pkg(path, params){
+    return { uri : path, params : params }
+  }
 }
 
 })()
