@@ -29,7 +29,7 @@ function newWeb(){
       args.push(responder(cb, res))
     }
 
-    match.fn.apply(this, args)
+    fn.apply(this, args)
     return web
   }
 
