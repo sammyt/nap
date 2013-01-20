@@ -44,9 +44,12 @@ function newWeb(){
       , res = pkg(path, match.params)
       , args = [req]
       , fn = match.fn
+      , sync = false
     
     if(fn.length > 1) {
       args.push(responder(cb, res))
+    } else {
+      sync = true
     }
 
     var ctx = this instanceof HTMLElement 
@@ -54,6 +57,8 @@ function newWeb(){
       : view
 
     fn.apply(ctx, args)
+    if(sync && cb != undefined){ cb() }
+      
     return web
   }
 

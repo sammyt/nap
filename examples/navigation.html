@@ -1,0 +1,46 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script type="text/javascript" src="../lib/tabs.js"></script>
+  <script type="text/javascript" src="../src/nap.js"></script>
+  <script type="text/javascript" src="d3.js"></script>
+  
+  <script type="text/javascript">
+    function init(){
+      
+      function speak(req){
+        d3.select(this).text(req.params.name)
+      }
+
+      var web = nap.web()
+        .view(d3.select(".container").node())
+        .resource("/speak/:name", speak)
+
+      web.req("/speak/sammy")
+
+      d3.select(document)
+        .selectAll("a")
+        .on("click", function(){
+          d3.event.preventDefault()
+          var next  = d3.select(d3.event.target).attr("href")
+          web.req(
+            next
+          , function(err, data){
+              window.location = "#!" + next
+            }
+          )
+        })
+    }
+  </script>
+  <title>Navigation</title>
+</head>
+<body onload="init()">
+  <a href="/speak/sammy">sammy</a>
+  <a href="/speak/bean">bean</a>
+  <a href="/speak/sage">sage</a>
+  <a href="/speak/floor">floor</a>
+  <a href="/speak/cat">cat</a>
+  <div class="container"></div>
+</body>
+</html>
