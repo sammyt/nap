@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <script type="text/javascript" src="tabs.js"></script>
   <script type="text/javascript" src="nap.js"></script>
+  <script type="text/javascript" src="d3.js"></script>
   
   <script type="text/javascript">
     function init(){
@@ -16,16 +17,32 @@
         console.log("called", req.uri, req.params)
       }
 
-      var myweb = nap.web()
+      function speak(req){
+        console.log("called", req.uri, req.params)
+        var s = d3.select(this)
+        s.select("span").text(req.params.name)
+      }
+
+      var web = nap.web()
         .resource("/foo/bar", bar)
         .resource("/foo/:thing/wibble", foo)
+        .resource("/speak/:name", speak)
 
-      myweb.req("/foo/bar")
-      myweb.req("/foo/chips/wibble")
+      web.req("/foo/bar")
+      web.req("/foo/chips/wibble")
+
+      d3.select(".message")
+        .data(["/speak/sammy"])
+        .select(web.req)
+
+      
     }
   </script>
   <title>Basic</title>
 </head>
 <body onload="init()">
+  <div class="message">
+    <span></span>
+  </div>
 </body>
 </html>

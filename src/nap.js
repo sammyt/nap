@@ -23,9 +23,10 @@ function createWeb(){
   web.req = function(path){
     var match = tabs.match(path)
     if(!match) throw Error("no match")
-    match.fn.apply(match.fn, [request(path, match.params)])
+    match.fn.apply(this, [request(path, match.params)])
+    return web
   }
-  return web  
+  return web
 }
 
 })()
