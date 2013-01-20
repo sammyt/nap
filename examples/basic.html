@@ -18,9 +18,7 @@
       }
 
       function speak(req){
-        console.log("called", req.uri, req.params)
-        var s = d3.select(this)
-        s.select("span").text(req.params.name)
+        d3.select(this).text(req.params.name)
       }
 
       function peas(req, res){
@@ -38,9 +36,16 @@
       web.req("/foo/bar")
       web.req("/foo/chips/wibble")
 
-      // create a view from a request
+      // create some views from requests
       d3.select(".message")
-        .data(["/speak/sammy"])
+        .selectAll("li")
+        .data(
+          [ "/speak/sammy"
+          , "/speak/becky"
+          , "/speak/zia"
+          ]
+        )
+        .enter().append("li")
         .select(web.req)
 
       // get some data from a request
@@ -52,8 +57,7 @@
   <title>Basic</title>
 </head>
 <body onload="init()">
-  <div class="message">
-    <span></span>
-  </div>
+  <ul class="message">
+  </ul>
 </body>
 </html>
