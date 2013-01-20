@@ -105,19 +105,19 @@ describe("Nap", function(){
       , body : "where am i?"
       })
     })
-    describe("web.uri", function(){
-      it("should generate a uri based on a named resource", function(){
-        var web = nap.web()
-          .resource("demo", "/my-demo", function(){})
+  })
+  describe("web.uri", function(){
+    it("should generate a uri based on a named resource", function(){
+      var web = nap.web()
+        .resource("demo", "/my-demo", function(){})
 
-        web.uri("demo").should.equal("/my-demo")
-      })
-      it("should generate a uri with params", function(){
-        var web = nap.web()
-          .resource("demo", "/my-demo/:id", function(){})
-
-        web.uri("demo", { id : "foo" }).should.equal("/my-demo/foo")
-      })
+      web.uri("demo").should.equal("/my-demo")
     })
+    it("should generate a uri with params", function(){
+      var web = nap.web()
+        .resource("demo", "/my-demo/:id", function(){})
+
+      web.uri("demo", { id : "foo" }).should.equal("/my-demo/foo")
+    })  
   })
 })
