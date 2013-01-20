@@ -5,6 +5,7 @@ nap.web = newWeb
 
 function newWeb(){
   var web = {}
+    , view
   
   web.resource = function(path, handler){
     tabs.add(path, function(params){
@@ -29,14 +30,26 @@ function newWeb(){
       args.push(responder(cb, res))
     }
 
-    fn.apply(this, args)
+    var ctx = this instanceof HTMLElement 
+      ? this
+      : view
+
+    fn.apply(ctx, args)
+    return web
+  }
+
+  web.view = function(val){
+    if(!arguments.length) return view
+    view = val
     return web
   }
 
   return web
 
   function responder(cb, res){
-    cb || (cb = function(){})
+    if(typeof cb !== "function"){
+      cb = function(){}
+    }
     return function(body){
       res.body = body
       cb(false, res)

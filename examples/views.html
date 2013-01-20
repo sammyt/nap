@@ -1,0 +1,47 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script type="text/javascript" src="/tabs.js"></script>
+  <script type="text/javascript" src="/nap.js"></script>
+  <script type="text/javascript" src="/d3.js"></script>
+  
+  <script type="text/javascript">
+    function init(){
+      
+      function speak(req, res){
+        d3.select(this).text(req.params.name)
+        res("thanks " + req.params.name)
+      }
+
+      // setup this web
+      var web = nap.web()
+        // set the default context
+        .view(d3.select(".top").node())
+        .resource("/speak/:name", speak)
+
+      // request into default context
+      web.req("/speak/sammy")
+
+      // view into specific context
+      var req = web.req.bind(d3.select(".bottom").node())
+
+      req("/speak/skyla", function(err, res){
+        // anything can reply
+        console.log(res.body)
+      })
+
+      // web.req still has .top as context
+      web.req("/speak/becky")
+    }
+  </script>
+  <title>Views</title>
+</head>
+<body onload="init()">
+  <div class="top">
+  </div>
+  <hr >
+  <div class="bottom">
+  </div>
+</body>
+</html>
