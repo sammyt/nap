@@ -56,9 +56,12 @@ function newWeb(){
       ? this
       : view
 
-    fn.apply(ctx, args)
-    if(sync && cb != undefined){ cb() }
-      
+    fn.apply(ctx, args);
+
+    if(sync && isFn(cb)){ 
+      cb() 
+    }
+
     return web
   }
 
@@ -89,7 +92,7 @@ function newWeb(){
   return web
 
   function responder(cb, res){
-    if(isFn(cb)){
+    if(!isFn(cb)){
       cb = function(){}
     }
     return function(body){
@@ -103,11 +106,11 @@ function newWeb(){
   }
 
   function isFn(inst){
-    return typeof inst !== "function"
+    return typeof inst === "function"
   }
 
   function isStr(inst){
-    return typeof inst !== "string"
+    return typeof inst === "string"
   }
 }
 
