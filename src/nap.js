@@ -6,28 +6,26 @@ nap.web = createWeb
 function createWeb(){
   var web = {}
 
+  function request(path){
+    return { uri : path }
+  }
+
   web.resource = function(path, handler){
-    tab.add(path, function(){
-      console.log(arguments)
-      return handler
+    tabs.add(path, function(){
+      return {
+        fn : handler
+      , path : path
+      }
     })
     return web
   }
 
   web.req = function(path){
-    var match = tab.match(path)
+    var match = tabs.match(path)
     if(!match) throw Error("no match")
-    match()
+    match.fn.apply(match.fn, [request(match.path)])
   }
   return web  
 }
 
 })()
-
-/*
-var myweb = nap.web()
-  .resource("/foo",  function(){ console.log("foo") })
-  .resource("/bing",  function(){ console.log("bing") })
-  .resource("/bing/bong",  function(){ console.log("bong") })
-*/
-

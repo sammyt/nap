@@ -1,0 +1,1 @@
+../../tab/src/tabs.js
