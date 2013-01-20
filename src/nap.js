@@ -6,9 +6,24 @@ nap.web = newWeb
 function newWeb(){
   var web = {}
     , view
+    , resources = {}
   
-  web.resource = function(path, handler){
-    tabs.add(path, function(params){
+  web.resource = function(name, ptn, handler){
+    if(arguments.length == 1) return resources[name]
+
+    if(arguments.length == 2) {
+      handler = ptn
+      
+      if(name[0] === "/"){
+        ptn = name
+      } else {
+        ptn = name
+      }
+    }
+
+    resources[name] = handler
+    
+    tabs.add(ptn, function(params){
       return {
         fn : handler
       , params : params
@@ -47,7 +62,7 @@ function newWeb(){
   return web
 
   function responder(cb, res){
-    if(typeof cb !== "function"){
+    if(isFn(cb)){
       cb = function(){}
     }
     return function(body){
@@ -58,6 +73,14 @@ function newWeb(){
 
   function pkg(path, params){
     return { uri : path, params : params }
+  }
+
+  function isFn(inst){
+    return typeof inst !== "function"
+  }
+
+  function isStr(inst){
+    return typeof inst !== "string"
   }
 }
 
