@@ -9,14 +9,19 @@
     function init(){
       
       function bar(req){
-        console.log(req)
+        console.log("called", req.uri, req.params)
+      }
+
+      function foo(req){
+        console.log("called", req.uri, req.params)
       }
 
       var myweb = nap.web()
-      myweb.resource("/foo/bar", bar)
+        .resource("/foo/bar", bar)
+        .resource("/foo/:thing/wibble", foo)
 
       myweb.req("/foo/bar")
-
+      myweb.req("/foo/chips/wibble")
     }
   </script>
   <title>Basic</title>

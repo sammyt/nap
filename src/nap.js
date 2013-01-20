@@ -6,15 +6,15 @@ nap.web = createWeb
 function createWeb(){
   var web = {}
 
-  function request(path){
-    return { uri : path }
+  function request(path, params){
+    return { uri : path, params : params }
   }
 
   web.resource = function(path, handler){
-    tabs.add(path, function(){
+    tabs.add(path, function(params){
       return {
         fn : handler
-      , path : path
+      , params : params
       }
     })
     return web
@@ -23,7 +23,7 @@ function createWeb(){
   web.req = function(path){
     var match = tabs.match(path)
     if(!match) throw Error("no match")
-    match.fn.apply(match.fn, [request(match.path)])
+    match.fn.apply(match.fn, [request(path, match.params)])
   }
   return web  
 }
