@@ -1,0 +1,49 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script type="text/javascript" src="../lib/tabs.js"></script>
+  <script type="text/javascript" src="../src/nap.js"></script>
+  <script type="text/javascript" src="d3.js"></script>
+  
+  <script type="text/javascript">
+    function init(){
+      
+      function whisper(req, res){
+        d3.select(this).text(req.params.name)
+      }
+
+      function shout(req, res){
+        d3.select(this).append("h1").text(req.params.name)
+      }
+
+      // speak has two representations chosen
+      // via a css selector matched on the context
+      var speak = nap.handlers.bySelector(
+        ".big" , shout
+      , ".little", whisper
+      )
+
+      // add speak as a resource
+      var web = nap.web()
+        .resource("/speak/:name", speak)
+
+      // get the nodes
+      var big = d3.select(".big").node()
+        , little = d3.select(".little").node()
+
+      // view the two representations
+      web.req.bind(big)("/speak/sammy")
+      web.req.bind(little)("/speak/sammy")
+
+    }
+  </script>
+  <title>Negotiate</title>
+</head>
+<body onload="init()">
+  <div class="content">
+    <div class="big"></div>
+    <div class="little"></div>
+  </div>
+</body>
+</html>

@@ -2,6 +2,49 @@
 
 nap = {}
 nap.web = newWeb
+nap.handlers = { bySelector : bySelector }
+
+var root = document.documentElement
+  , matchesSelector = root.matchesSelector 
+    || root.webkitMatchesSelector 
+    || root.mozMatchesSelector 
+    || root.msMatchesSelector 
+    || root.oMatchesSelector
+
+function is(n, s) {
+  return matchesSelector.call(n, s);
+}
+
+function isFn(inst){
+  return typeof inst === "function"
+}
+
+function isStr(inst){
+  return typeof inst === "string"
+}
+
+function bySelector(){
+
+  var options = [].slice.apply(arguments, [0])
+    .reduce(
+      function(curr, next, list){
+        if(isStr(next)) curr.push({ selector : next })
+        else curr[curr.length - 1].fn = next
+        return curr
+      }
+    , []
+    )
+  
+  return function(req, res){
+    var node = this
+    options.some(function(option){
+      if(is(node, option.selector)){
+        option.fn.apply(node, [req, res])
+        return true
+      }
+    })
+  }
+}
 
 function newWeb(){
   var web = {}
@@ -103,14 +146,6 @@ function newWeb(){
 
   function pkg(path, params){
     return { uri : path, params : params }
-  }
-
-  function isFn(inst){
-    return typeof inst === "function"
-  }
-
-  function isStr(inst){
-    return typeof inst === "string"
   }
 }
 
