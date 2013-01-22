@@ -56,13 +56,7 @@ function newWeb(){
 
     if(arguments.length == 2) {
       handler = ptn
-      
-      // TODO: this looks broken
-      if(name[0] === "/"){
-        ptn = name
-      } else {
-        ptn = name
-      }
+      ptn = name
     }
 
     resources[name] = {
