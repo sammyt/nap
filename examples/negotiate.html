@@ -19,7 +19,7 @@
 
       // speak has two representations chosen
       // via a css selector matched on the context
-      var speak = nap.handlers.bySelector(
+      var speak = nap.negotiate.bySelector(
         ".big" , shout
       , ".little", whisper
       )
@@ -35,7 +35,6 @@
       // view the two representations
       web.req.bind(big)("/speak/sammy")
       web.req.bind(little)("/speak/sammy")
-
     }
   </script>
   <title>Negotiate</title>

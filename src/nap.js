@@ -2,7 +2,7 @@
 
 nap = {}
 nap.web = newWeb
-nap.handlers = { bySelector : bySelector }
+nap.negotiate = { bySelector : bySelector }
 
 var root = document.documentElement
   , matchesSelector = root.matchesSelector 
@@ -57,6 +57,7 @@ function newWeb(){
     if(arguments.length == 2) {
       handler = ptn
       
+      // TODO: this looks broken
       if(name[0] === "/"){
         ptn = name
       } else {

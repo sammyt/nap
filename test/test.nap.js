@@ -120,4 +120,56 @@ describe("Nap", function(){
       web.uri("demo", { id : "foo" }).should.equal("/my-demo/foo")
     })  
   })
+  describe("web.negotiate", function(){
+    describe("bySelector", function(){
+      var node
+      beforeEach(function(){
+        node = d3.select("body")
+          .append("div")
+          .classed("nap-tests", true)
+      })
+      afterEach(function(){
+        node.remove()
+      })
+      it("should call the correct handler by selector", function(){
+        var one = node.append("span").classed("one", true).node()
+          , o = sinon.spy()
+          , t = sinon.spy()
+
+        var handler = nap.negotiate.bySelector(
+          ".one", o
+        , ".two" , t
+        )
+
+        var web = nap.web().resource("/foo", handler)
+
+        web.req.bind(one)("/foo")
+
+        o.should.have.been.calledOnce
+        t.should.not.have.been.called
+      })
+      it("should assess handlers in order (top to bottom)", function(){
+        var one = node.append("span").classed("one", true).node()
+          , o = sinon.spy()
+          , t = sinon.spy()
+
+        var handler = nap.negotiate.bySelector(
+          ".two", t
+        , ".one", o
+        , "*" , t
+        )
+
+        var web = nap.web().resource("/foo", handler)
+
+        web.req.bind(one)("/foo")
+
+        o.should.have.been.calledOnce
+        t.should.not.have.been.called
+      })
+    })
+  })
 })
+
+
+
+
