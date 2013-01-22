@@ -1,7 +1,7 @@
 nap
 ===
 
-rest for the client
+REST for the client
 
 License
 -------
