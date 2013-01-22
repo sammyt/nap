@@ -27,7 +27,7 @@ function bySelector(){
 
   var options = [].slice.apply(arguments, [0])
     .reduce(
-      function(curr, next, list){
+      function(curr, next){
         if(isStr(next)) curr.push({ selector : next })
         else curr[curr.length - 1].fn = next
         return curr
