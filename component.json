@@ -1,0 +1,7 @@
+{
+  "name": "nap",
+  "version": "0.0.0",
+  "dependencies": {
+    "rhumb": "../rhumb/"
+  }
+}

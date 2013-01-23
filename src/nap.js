@@ -65,7 +65,7 @@ function newWeb(){
     , handler : handler
     }
     
-    tabs.add(ptn, function(params){
+    rhumb.add(ptn, function(params){
       return {
         fn : handler
       , params : params
@@ -75,7 +75,7 @@ function newWeb(){
   }
 
   web.req = function(path, cb){
-    var match = tabs.match(path)
+    var match = rhumb.match(path)
     if(!match) throw Error("no match")
 
     var req = pkg(path, match.params)
@@ -114,7 +114,7 @@ function newWeb(){
 
     if(!meta) throw new Error(name + " not found")
 
-    var parts = tabs.parse(meta.ptn)
+    var parts = rhumb.parse(meta.ptn)
 
     return parts.reduce(
       function(uri, part){
