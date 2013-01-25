@@ -1,4 +1,4 @@
 
 all:
-	uglifyjs ./src/nap.js ./lib/tabs.js -o out/nap.js -c -m
+	uglifyjs ./src/nap.js ./components/rhumb/rhumb.js -o nap.js -c -m
 	# woop woop
