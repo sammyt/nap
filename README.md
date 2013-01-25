@@ -3,6 +3,15 @@ nap
 
 REST for the client
 
+Developing
+----------
+
+```
+bower install
+open test/index.html
+```
+
+
 License
 -------
 
