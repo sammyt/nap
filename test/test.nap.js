@@ -92,18 +92,14 @@ describe("Nap", function(){
         , cb = sinon.spy()
 
       web.resource("/foo/bar", function(req, res){
-        res("where am i?")
+        res(false, "where am i?")
       })
 
 
       web.req("/foo/bar", cb)
 
       cb.should.have.been.calledOnce
-      cb.should.have.been.calledWith(false, {
-        uri : "/foo/bar"
-      , params : {}
-      , body : "where am i?"
-      })
+      cb.should.have.been.calledWith(false, "where am i?")
     })
   })
   describe("web.uri", function(){
@@ -121,7 +117,7 @@ describe("Nap", function(){
     })  
   })
   describe("web.negotiate", function(){
-    describe("bySelector", function(){
+    describe("selector", function(){
       var node
       beforeEach(function(){
         node = d3.select("body")
@@ -136,7 +132,7 @@ describe("Nap", function(){
           , o = sinon.spy()
           , t = sinon.spy()
 
-        var handler = nap.negotiate.bySelector(
+        var handler = nap.negotiate.selector(
           ".one", o
         , ".two" , t
         )
@@ -153,7 +149,7 @@ describe("Nap", function(){
           , o = sinon.spy()
           , t = sinon.spy()
 
-        var handler = nap.negotiate.bySelector(
+        var handler = nap.negotiate.selector(
           ".two", t
         , ".one", o
         , "*" , t
@@ -165,6 +161,78 @@ describe("Nap", function(){
 
         o.should.have.been.calledOnce
         t.should.not.have.been.called
+      })
+      it("should fail when no selector matches", function(){
+        var o = sinon.spy()
+          , t = sinon.spy()
+          , cb = sinon.spy()
+
+        var handler = nap.negotiate.selector(
+          ".two", t
+        , ".one", o
+        )
+
+        var web = nap.web().resource("/foo", handler)
+
+        web.req("/foo", cb)
+
+        o.should.not.have.been.called
+        t.should.not.have.been.called
+
+        cb.should.have.been.calledOnce
+        cb.should.have.been.calledWith("No matches found")
+      })
+    })
+    describe("ordered", function(){
+      it("should try handlers in order they are added", function(){
+        var calls = []
+
+        nap.web().resource(
+          "/nothing"
+        , nap.negotiate.ordered(
+            function(req, res){ calls.push("one"), res(true) }
+          , function(req, res){ calls.push("two"), res(true) }  
+          )
+        )
+        .req("/nothing")
+
+        calls.should.eql(["one", "two"])
+      })
+      it("should fail when all handers fail", function(){
+        var calls = []
+          , cb = sinon.spy()
+
+        nap.web().resource(
+          "/nothing"
+        , nap.negotiate.ordered(
+            function(req, res){ calls.push("one"), res(true) }
+          , function(req, res){ calls.push("two"), res(true) }  
+          )
+        )
+        .req("/nothing", cb)
+
+        calls.should.eql(["one", "two"])
+        cb.should.have.been.calledOnce
+        cb.should.have.been.calledWith("All handlers failed")
+      })
+      it("should only call handers until one succeeds", function(){
+        var calls = []
+          , cb = sinon.spy()
+
+        nap.web().resource(
+          "/nothing"
+        , nap.negotiate.ordered(
+            function(req, res){ calls.push("one"),   res(true) }
+          , function(req, res){ calls.push("two"),   res(true) }
+          , function(req, res){ calls.push("three"), res(false) }  
+          , function(req, res){ calls.push("four"),  res(false) }  
+          )
+        )
+        .req("/nothing", cb)
+
+        calls.should.eql(["one", "two", "three"])
+        cb.should.have.been.calledOnce
+        cb.should.have.been.calledWith(false)
       })
     })
   })

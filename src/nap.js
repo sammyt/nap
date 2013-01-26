@@ -2,7 +2,12 @@
 
 nap = {}
 nap.web = newWeb
-nap.negotiate = { bySelector : bySelector }
+nap.negotiate = { 
+  selector : bySelector
+, ordered  : byOrdered
+}
+
+function noop(){}
 
 var root = document.documentElement
   , matchesSelector = root.matchesSelector 
@@ -23,6 +28,38 @@ function isStr(inst){
   return typeof inst === "string"
 }
 
+function byOrdered(){
+  var fns = [].slice.apply(arguments, [0])
+  
+  return function(req, res){
+    var scope = this
+    if(!fns.length){
+      res("No handers specified")
+      return
+    }
+
+    next([].concat(fns))
+
+    function next(fns){
+      var fn = fns.shift()
+      if(!fn){
+        res("All handlers failed")
+        return
+      }
+      fn.apply(scope, [
+        req
+      , function(err, data){
+          if(err){
+            next(fns)
+          } else {
+            res(err, data)
+          }
+        }
+      ])
+    }
+  }
+}
+
 function bySelector(){
 
   var options = [].slice.apply(arguments, [0])
@@ -37,18 +74,24 @@ function bySelector(){
   
   return function(req, res){
     var node = this
-    options.some(function(option){
+      , called = false
+
+    called = options.some(function(option){
       if(is(node, option.selector)){
         option.fn.apply(node, [req, res])
         return true
       }
     })
+
+    if(!called){
+      res("No matches found")
+    }
   }
 }
 
 function newWeb(){
   var web = {}
-    , view
+    , view = document.documentElement
     , resources = {}
   
   web.resource = function(name, ptn, handler){
@@ -79,13 +122,12 @@ function newWeb(){
     if(!match) throw Error("no match")
 
     var req = pkg(path, match.params)
-      , res = pkg(path, match.params)
       , args = [req]
       , fn = match.fn
       , sync = false
     
     if(fn.length > 1) {
-      args.push(responder(cb, res))
+      args.push(isFn(cb) ? cb : noop)
     } else {
       sync = true
     }
@@ -128,16 +170,6 @@ function newWeb(){
   }
 
   return web
-
-  function responder(cb, res){
-    if(!isFn(cb)){
-      cb = function(){}
-    }
-    return function(body){
-      res.body = body
-      cb(false, res)
-    }
-  }
 
   function pkg(path, params){
     return { uri : path, params : params }

@@ -22,7 +22,7 @@
       }
 
       function peas(req, res){
-        res(["a", "b", "c"])
+        res(false, ["a", "b", "c"])
       }
 
       // setup this web
@@ -50,7 +50,7 @@
 
       // get some data from a request
       web.req("/peas", function(err, res){
-        console.log(res.body)
+        console.log(res)
       })
     }
   </script>

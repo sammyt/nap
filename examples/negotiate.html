@@ -9,17 +9,17 @@
   <script type="text/javascript">
     function init(){
       
-      function whisper(req, res){
+      function whisper(req){
         d3.select(this).text(req.params.name)
       }
 
-      function shout(req, res){
+      function shout(req){
         d3.select(this).append("h1").text(req.params.name)
       }
 
       // speak has two representations chosen
       // via a css selector matched on the context
-      var speak = nap.negotiate.bySelector(
+      var speak = nap.negotiate.selector(
         ".big" , shout
       , ".little", whisper
       )

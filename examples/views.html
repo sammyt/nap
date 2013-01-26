@@ -11,7 +11,7 @@
       
       function speak(req, res){
         d3.select(this).text(req.params.name)
-        res("thanks " + req.params.name)
+        res(false, "thanks " + req.params.name)
       }
 
       // setup this web
@@ -28,7 +28,7 @@
 
       req("/speak/skyla", function(err, res){
         // anything can reply
-        console.log(res.body)
+        console.log(res)
       })
 
       // web.req still has .top as context
