@@ -10,7 +10,7 @@
     function init(){
     
       var web = nap.web()
-        .resource("weather", "/weather/:when", function(req){
+        .resource("weather", "/weather/{when}", function(req){
           d3.select(this).text("snow " + req.params.when)
         })
 

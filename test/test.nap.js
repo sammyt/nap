@@ -38,10 +38,10 @@ describe("Nap", function(){
       var web = nap.web()
         , fn = sinon.spy()
 
-      web.resource("/foo/:val", fn)
+      web.resource("/foo/{val}", fn)
 
-      web.resource("/foo/:val").should.be.ok
-      web.resource("/foo/:val").handler.should.be.equal(fn)
+      web.resource("/foo/{val}").should.be.ok
+      web.resource("/foo/{val}").handler.should.be.equal(fn)
 
       web.req("/foo/bean")
       fn.should.have.been.calledOnce
@@ -111,7 +111,7 @@ describe("Nap", function(){
     })
     it("should generate a uri with params", function(){
       var web = nap.web()
-        .resource("demo", "/my-demo/:id", function(){})
+        .resource("demo", "/my-demo/{id}", function(){})
 
       web.uri("demo", { id : "foo" }).should.equal("/my-demo/foo")
     })  

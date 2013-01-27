@@ -26,7 +26,7 @@
 
       // add speak as a resource
       var web = nap.web()
-        .resource("/speak/:name", speak)
+        .resource("/speak/{name}", speak)
 
       // get the nodes
       var big = d3.select(".big").node()

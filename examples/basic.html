@@ -28,8 +28,8 @@
       // setup this web
       var web = nap.web()
         .resource("/foo/bar", bar)
-        .resource("/foo/:thing/wibble", foo)
-        .resource("/speak/:name", speak)
+        .resource("/foo/{thing}/wibble", foo)
+        .resource("/speak/{name}", speak)
         .resource("/peas", peas)
 
       // make some requests

@@ -156,12 +156,12 @@ function newWeb(){
 
     if(!meta) throw new Error(name + " not found")
 
-    var parts = rhumb.parse(meta.ptn)
+    var parts = rhumb._parse(meta.ptn)
 
     return parts.reduce(
       function(uri, part){
         if(part.type == "var"){
-          return [uri , params[part.input.substr(1)]].join("/")  
+          return [uri , params[part.input]].join("/")  
         }
         return [uri , part.input].join("/")  
       }
