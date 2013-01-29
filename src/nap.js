@@ -93,6 +93,8 @@ function newWeb(){
   var web = {}
     , view = document.documentElement
     , resources = {}
+    , routes = rhumb.create()
+
   
   web.resource = function(name, ptn, handler){
     if(arguments.length == 1) return resources[name]
@@ -108,7 +110,7 @@ function newWeb(){
     , handler : handler
     }
     
-    rhumb.add(ptn, function(params){
+    routes.add(ptn, function(params){
       return {
         fn : handler
       , params : params
@@ -118,8 +120,8 @@ function newWeb(){
   }
 
   web.req = function(path, cb){
-    var match = rhumb.match(path)
-    if(!match) throw Error("no match")
+    var match = routes.match(path)
+    if(!match) throw Error(path + " not found")
 
     var req = pkg(path, match.params)
       , args = [req]
@@ -152,6 +154,9 @@ function newWeb(){
   }
 
   web.uri = function(name, params){
+
+    // TODO: support all ptn types
+
     var meta = resources[name]
 
     if(!meta) throw new Error(name + " not found")
