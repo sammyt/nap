@@ -50,8 +50,10 @@ function byOrdered(){
         res("All handlers failed")
         return
       }
-      fn.apply(scope, [
-        req
+      invoke(
+        scope
+      , fn
+      , req
       , function(err, data){
           if(err){
             next(fns)
@@ -59,7 +61,7 @@ function byOrdered(){
             res(err, data)
           }
         }
-      ])
+      )
     }
   }
 }
@@ -84,7 +86,7 @@ function bySelector(){
 
     called = options.some(function(option){
       if(is(node, option.selector)){
-        option.fn.apply(node, [req, res])
+        invoke(node, option.fn, req, res)
         return true
       }
     })
@@ -102,7 +104,7 @@ function byUsing(key, fn){
       : key in req
     
     if(has) {
-      fn.apply(this, [req, res])
+      invoke(this, fn, req, res)
       return
     }
     res("Failed Using ", key)
@@ -115,8 +117,25 @@ function repliesView(fn){
       ? this 
       : req.web.view()
 
-    fn.apply(node, [req, res])
+    invoke(node, fn, req, res)
   } 
+}
+
+function invoke(scope, fn, req, cb){
+  var sync = false
+    , args = [req]
+    
+  if(fn.length > 1) {
+    args.push(isFn(cb) ? cb : noop)
+  } else {
+    sync = true
+  }
+  
+  fn.apply(scope, args);
+
+  if(sync && isFn(cb)){ 
+    cb() 
+  }
 }
 
 function newWeb(){
@@ -124,7 +143,6 @@ function newWeb(){
     , view = document.documentElement
     , resources = {}
     , routes = rhumb.create()
-
   
   web.resource = function(name, ptn, handler){
     if(arguments.length == 1) return resources[name]
@@ -166,21 +184,7 @@ function newWeb(){
 
     req.params = match.params
 
-    var args = [req]
-      , fn = match.fn
-      , sync = false
-    
-    if(fn.length > 1) {
-      args.push(isFn(cb) ? cb : noop)
-    } else {
-      sync = true
-    }
-    
-    fn.apply(this, args);
-
-    if(sync && isFn(cb)){ 
-      cb() 
-    }
+    invoke(this, match.fn, req, cb)
 
     return web
   }

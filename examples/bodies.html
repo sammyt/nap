@@ -8,37 +8,42 @@
   
   <script type="text/javascript">
     function init(){
-      var list = ["this", "that"]
 
-      function addTodo(req, res){
-        list.push(req.body), res()
+      function todo(){
+        var list = ["this", "that"]
+
+        function view(req){
+          d3.select(this)
+            .selectAll("li")
+            .data(list, function(d){return d})
+            .enter().append("li")
+            .text(function(d){return d})
+        }
+
+        function add(req){
+          list.push(req.body)
+        }
+
+        return {
+          view : view
+        , add : add
+        }
       }
-
-      function todos(req){
-        var sel = d3.select(this)
-          .selectAll("li")
-          .data(list, function(d){return d})
-
-        sel.enter().append("li")
-          .text(function(d){return d})
-
-        sel.exit().remove()
-      }
+      
+      var myTodo = todo()
 
       var web = nap.web()
         .view(d3.select(".container").node())
         .resource("/todos", 
           nap.negotiate.ordered(
-            nap.negotiate.using("body", addTodo)
-          , todos
+            nap.negotiate.using("body", myTodo.add)
+          , myTodo.view
           )
         )
 
       
       function render(){
-        var req = web.req.bind(
-          d3.select("ul").node()
-        )
+        var req = web.req.bind(d3.select("ul").node())
         req("/todos")
       }
 
@@ -64,7 +69,6 @@
   <div class="container">
 
     <ul>
-      <li></li>
     </ul>
 
     <form>
