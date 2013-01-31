@@ -5,6 +5,7 @@ nap.web = newWeb
 nap.negotiate = { 
   selector : bySelector
 , ordered  : byOrdered
+, using : byUsing
 }
 nap.replies = {
   view : repliesView
@@ -94,6 +95,20 @@ function bySelector(){
   }
 }
 
+function byUsing(key, fn){
+  return function(req, res){
+    var has = isFn(key) 
+      ? key.apply(this, [req, res])
+      : key in req
+    
+    if(has) {
+      fn.apply(this, [req, res])
+      return
+    }
+    res("Failed Using ", key)
+  }
+}
+
 function repliesView(fn){
   return function(req, res){
     var node = this instanceof HTMLElement 
@@ -101,8 +116,7 @@ function repliesView(fn){
       : req.web.view()
 
     fn.apply(node, [req, res])
-  }
-  
+  } 
 }
 
 function newWeb(){
@@ -136,16 +150,23 @@ function newWeb(){
   }
 
   web.req = function(path, cb){
-    var match = routes.match(path)
-    if(!match) throw Error(path + " not found")
-
     
     var req = { 
-          uri : path
-        , params : match.params 
-        , web : web
-        }
-      , args = [req]
+      uri : path
+    , web : web
+    }
+    
+    if(!isStr(path)){
+      req.uri = path.uri
+      req.body = path.body 
+    }
+
+    var match = routes.match(req.uri)
+    if(!match) throw Error(req.uri + " not found")
+
+    req.params = match.params
+
+    var args = [req]
       , fn = match.fn
       , sync = false
     
