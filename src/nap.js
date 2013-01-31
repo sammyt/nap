@@ -6,6 +6,9 @@ nap.negotiate = {
   selector : bySelector
 , ordered  : byOrdered
 }
+nap.replies = {
+  view : repliesView
+}
 
 function noop(){}
 
@@ -73,7 +76,9 @@ function bySelector(){
     )
   
   return function(req, res){
-    var node = this
+    var node = this instanceof HTMLElement 
+        ? this 
+        : req.web.view()
       , called = false
 
     called = options.some(function(option){
@@ -87,6 +92,17 @@ function bySelector(){
       res("No matches found")
     }
   }
+}
+
+function repliesView(fn){
+  return function(req, res){
+    var node = this instanceof HTMLElement 
+      ? this 
+      : req.web.view()
+
+    fn.apply(node, [req, res])
+  }
+  
 }
 
 function newWeb(){
@@ -123,7 +139,12 @@ function newWeb(){
     var match = routes.match(path)
     if(!match) throw Error(path + " not found")
 
-    var req = pkg(path, match.params)
+    
+    var req = { 
+          uri : path
+        , params : match.params 
+        , web : web
+        }
       , args = [req]
       , fn = match.fn
       , sync = false
@@ -133,12 +154,8 @@ function newWeb(){
     } else {
       sync = true
     }
-
-    var ctx = this instanceof HTMLElement 
-      ? this
-      : view
-
-    fn.apply(ctx, args);
+    
+    fn.apply(this, args);
 
     if(sync && isFn(cb)){ 
       cb() 
@@ -175,10 +192,6 @@ function newWeb(){
   }
 
   return web
-
-  function pkg(path, params){
-    return { uri : path, params : params }
-  }
 }
 
 })()

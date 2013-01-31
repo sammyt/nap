@@ -18,7 +18,8 @@
       var web = nap.web()
         // set the default context
         .view(d3.select(".top").node())
-        .resource("/speak/{name}", speak)
+        .resource("/speak/{name}", nap.replies.view(speak))
+
 
       // request into default context
       web.req("/speak/sammy")

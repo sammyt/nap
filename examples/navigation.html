@@ -15,8 +15,9 @@
 
       var web = nap.web()
         .view(d3.select(".container").node())
-        .resource("/speak/{name}", speak)
+        .resource("/speak/{name}", nap.replies.view(speak))
 
+      
       web.req("/speak/sammy")
 
       d3.select(document)

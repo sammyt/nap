@@ -56,24 +56,12 @@ describe("Nap", function(){
       web.req("/foo/bar")
 
       fn.should.have.been.calledOnce
-      fn.should.have.been.calledWith(
-        { uri : "/foo/bar"
-        , params : {}
-        }
-      )
+      
+      var arg = fn.args[0][0]
+      arg.uri.should.equal("/foo/bar")
+      arg.params.should.eql({})
     })
-    it("should call hander in default context", function(){
-      var div = document.createElement("div")
-        , web = nap.web().view(div)
-        , fn = sinon.spy()
-
-      web.resource("/foo/bar", fn)
-      web.req("/foo/bar")
-
-      fn.should.have.been.calledOnce
-      fn.should.have.been.calledOn(div)
-    })
-    it("should allow context to be overridden", function(){
+    it("should allow scope to be overridden", function(){
       var div = document.createElement("div")
         , web = nap.web().view(div)
         , fn = sinon.spy()
@@ -233,6 +221,22 @@ describe("Nap", function(){
         calls.should.eql(["one", "two", "three"])
         cb.should.have.been.calledOnce
         cb.should.have.been.calledWith(false)
+      })
+    })
+    describe("web.replies", function(){
+      it("should invoke on web.view when no node specified", function(){
+        var web = nap.web()
+          , fn = sinon.spy()
+          , div = document.createElement("div")
+
+        web
+          .resource("/foo/bar", nap.replies.view(fn))
+          .view(div)
+
+        web.req("/foo/bar")
+
+        fn.should.have.been.calledOnce
+        fn.should.have.been.calledOn(div)
       })
     })
   })
