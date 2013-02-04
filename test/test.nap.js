@@ -89,6 +89,18 @@ describe("Nap", function(){
       cb.should.have.been.calledOnce
       cb.should.have.been.calledWith(false, "where am i?")
     })
+    it("be default requests have method of 'get'", function(){
+      var web = nap.web()
+        , request
+
+      web.resource("/yo", function(req){
+        request = req
+      })
+
+      web.req("/yo")
+
+      expect(request.method).to.equal("get")
+    })
   })
   describe("web.uri", function(){
     it("should generate a uri based on a named resource", function(){
@@ -223,21 +235,35 @@ describe("Nap", function(){
         cb.should.have.been.calledWith(false)
       })
     })
-    describe("web.replies", function(){
-      it("should invoke on web.view when no node specified", function(){
+    describe("negotiate.method", function(){
+      it("should only accept methods where handlers are provided", function(){
         var web = nap.web()
-          , fn = sinon.spy()
-          , div = document.createElement("div")
+          , spy = sinon.spy()
 
-        web
-          .resource("/foo/bar", nap.replies.view(fn))
-          .view(div)
+        web.resource("/sausage" , nap.negotiate.method({ get : spy }))
 
-        web.req("/foo/bar")
+        web.req("/sausage")
+        web.req({ uri: "/sausage" })
+        web.req({ uri: "/sausage", method : "send" })
 
-        fn.should.have.been.calledOnce
-        fn.should.have.been.calledOn(div)
+        spy.should.have.been.calledTwice
       })
+    })
+  })
+  describe("web.replies", function(){
+    it("should invoke on web.view when no node specified", function(){
+      var web = nap.web()
+        , fn = sinon.spy()
+        , div = document.createElement("div")
+
+      web
+        .resource("/foo/bar", nap.replies.view(fn))
+        .view(div)
+
+      web.req("/foo/bar")
+
+      fn.should.have.been.calledOnce
+      fn.should.have.been.calledOn(div)
     })
   })
 })

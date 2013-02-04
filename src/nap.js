@@ -5,8 +5,9 @@ nap.web = newWeb
 nap.negotiate = { 
   selector : bySelector
 , ordered  : byOrdered
-, using : byUsing
+, method : byMethod
 }
+
 nap.replies = {
   view : repliesView
 }
@@ -97,17 +98,26 @@ function bySelector(){
   }
 }
 
-function byUsing(key, fn){
+function byMethod(map){
+
+  var order = Object.keys(map)
+    .map(function(method){
+      return handleMethod(method, map[method])
+    })
+
   return function(req, res){
-    var has = isFn(key) 
-      ? key.apply(this, [req, res])
-      : key in req
-    
-    if(has) {
+    var fn = byOrdered.apply(null, order)
+    invoke(this, fn, req, res)
+  }
+}
+
+function handleMethod(method, fn){
+  return function(req, res){
+    if(req.method == method){
       invoke(this, fn, req, res)
       return
     }
-    res("Failed Using ", key)
+    res("Method Not Supported")
   }
 }
 
@@ -169,15 +179,18 @@ function newWeb(){
 
   web.req = function(path, cb){
     
-    var req = { 
-      uri : path
-    , web : web
-    }
+    var req = path
     
-    if(!isStr(path)){
-      req.uri = path.uri
-      req.body = path.body 
+    if(isStr(path)){
+      req = {
+        uri: path
+      , method : "get"
+      }
     }
+
+    req.web = web
+    req.method || (req.method = "get")
+    req.method == "get" && (delete req["body"])
 
     var match = routes.match(req.uri)
     if(!match) throw Error(req.uri + " not found")

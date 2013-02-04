@@ -35,9 +35,10 @@
       var web = nap.web()
         .view(d3.select(".container").node())
         .resource("/todos", 
-          nap.negotiate.ordered(
-            nap.negotiate.using("body", myTodo.add)
-          , myTodo.view
+          nap.negotiate.method(
+            { get: myTodo.view 
+            , send: myTodo.add 
+            }
           )
         )
 
@@ -54,7 +55,10 @@
           d3.event.preventDefault()
           var input = this
           web.req(
-            { uri : "/todos" , body : input.todo.value }
+            { uri : "/todos" 
+            , method : "send"
+            , body : input.todo.value 
+            }
           , function(err, data){
               input.todo.value = ""
               render()
