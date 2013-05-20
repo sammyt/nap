@@ -1,1 +1,279 @@
-(function(){function t(){}function n(t,n){return l.call(t,n)}function r(t){return"function"==typeof t}function e(t){return"string"==typeof t}function i(){var t=[].slice.apply(arguments,[0]);return function(n,r){function e(t){var a=t.shift();return a?(c(i,a,n,function(n,i){n?e(t):r(n,i)}),void 0):(r("All handlers failed"),void 0)}var i=this;return t.length?(e([].concat(t)),void 0):(r("No handers specified"),void 0)}}function a(){var t=[].slice.apply(arguments,[0]).reduce(function(t,n){return e(n)?t.push({selector:n}):t[t.length-1].fn=n,t},[]);return function(r,e){var i=this instanceof HTMLElement?this:r.web.view(),a=!1;a=t.some(function(t){return n(i,t.selector)?(c(i,t.fn,r,e),!0):void 0}),a||e("No matches found")}}function u(t){var n=Object.keys(t).map(function(n){return o(n,t[n])});return function(t,r){var e=i.apply(null,n);c(this,e,t,r)}}function o(t,n){return function(r,e){return r.method==t?(c(this,n,r,e),void 0):(e("Method Not Supported"),void 0)}}function f(t){return function(n,r){var e=this instanceof HTMLElement?this:n.web.view();c(e,t,n,r)}}function c(n,e,i,a){var u=!1,o=[i];e.length>1?o.push(r(a)?a:t):u=!0,e.apply(n,o),u&&r(a)&&a()}function s(){var t={},n=document.documentElement,r={},i=rhumb.create();return t.resource=function(n,e,a){return 1==arguments.length?r[n]:(2==arguments.length&&(a=e,e=n),r[n]={name:n,ptn:e,handler:a},i.add(e,function(t){return{fn:a,params:t}}),t)},t.req=function(n,r){var a=n;e(n)&&(a={uri:n,method:"get"}),a.web=t,a.method||(a.method="get"),"get"==a.method&&delete a.body;var u=i.match(a.uri);if(!u)throw Error(a.uri+" not found");return a.params=u.params,c(this,u.fn,a,r),t},t.view=function(r){return arguments.length?(n=r,t):n},t.uri=function(t,n){var e=r[t];if(!e)throw Error(t+" not found");var i=rhumb._parse(e.ptn);return i.reduce(function(t,r){return"var"==r.type?[t,n[r.input]].join("/"):[t,r.input].join("/")},"")},t}nap={},nap.web=s,nap.negotiate={selector:a,ordered:i,method:u},nap.replies={view:f};var p=document.documentElement,l=p.matchesSelector||p.webkitMatchesSelector||p.mozMatchesSelector||p.msMatchesSelector||p.oMatchesSelector})(),function(){function t(t,n){var r={},e=function(t,n){var i=t.shift();if(!i)return n.leaf||!1;if(n.fixed&&i in n.fixed)return e(t,n.fixed[i]);if(n.partial){var a=n.partial.tests,u=a.some(function(t){if(t.ptn.test(i)){var e=i.match(t.ptn);return t.vars.forEach(function(t,n){r[t]=e[n+1]}),n=t,!0}});if(u)return e(t,n)}return n.var?(r[n.var.name]=i,e(t,n.var)):!1},i=e(t,n,r);return i?{fn:i,params:r}:!1}function n(){var n={},i={},a=function(t,n,r){var e,i=t.shift(),u=!!t.length;if(i)if("fixed"==i.type)n.fixed||(n.fixed={}),e=n.fixed[i.input]||(n.fixed[i.input]={}),u?a(t,e,r):e.leaf=r;else if("var"==i.type){if(n.var)throw Error("Ambiguity");e=n.var={},e.name=i.input,u?a(t,e,r):e.leaf=r}else if(i.type="partial"){if(n.partial&&n.partial.names[i.name])throw Error("Ambiguity");n.partial||(n.partial={names:{},tests:[]});var e={};e.ptn=i.input,e.vars=i.vars,n.partial.names[i.name]=e,n.partial.tests.push(e),u?a(t,e,r):e.leaf=r}};return n.add=function(t,n){a(e(t),i,n)},n.match=function(n){var e=n.split("/").filter(r),a=t(e,i);return a?a.fn.apply(a.fn,[a.params]):void 0},n}function r(t){return!!t}function e(t){function n(t){var n=t.match(o);return{type:"var",input:n[1]}}function e(t){return{type:"fixed",input:t}}function i(t){for(var n=t.match(f),r="",e=t.length,i=0;e>i&&n;)i+=n[0].length,n[1]&&(r+=n[1]),r+="([\\w-]+)",n[3]&&(r+=n[3]),n=t.substr(i).match(f);var a=[],u=t.replace(/{([\w-]+)}/g,function(t,n){return a.push(n),"{var}"});return{type:"partial",input:RegExp(r),name:u,vars:a}}function a(t){return t.split("/").filter(r).map(function(t){return o.test(t)?n(t):f.test(t)?i(t):e(t)})}function u(t){for(var n,r="",e=[],i=0,o=t.length,f=!0;f&&o>i;){switch(n=t[i]){case")":case"(":f=!1;break;default:r+=n}i++}if(!f){var c=u(t.substr(i+1));c.length&&e.push(c)}return a(r).concat(e)}var o=/^{(\w+)}$/,f=/([\w'-]+)?{([\w-]+)}([\w'-]+)?/;return"/"==t.trim()?[{type:"fixed",input:""}]:-1==t.indexOf("(")?a(t):u(t)}rhumb=n(),rhumb.create=n,rhumb._parse=e,rhumb._findInTree=t}();
+nap = function environment(nap_window) {
+  var nap = {
+    environment: environment
+  }, nap_window = nap_window || window, nap_document = nap_window.document;
+  nap.web = newWeb;
+  nap.negotiate = {
+    selector: bySelector,
+    ordered: byOrdered,
+    method: byMethod,
+    invoke: invoke
+  };
+  nap.replies = {
+    view: repliesView
+  };
+  function noop() {}
+  var root = nap_document.documentElement, matchesSelector = root.matchesSelector || root.webkitMatchesSelector || root.mozMatchesSelector || root.msMatchesSelector || root.oMatchesSelector;
+  function is(n, s) {
+    return matchesSelector.call(n, s);
+  }
+  function isFn(inst) {
+    return typeof inst === "function";
+  }
+  function isStr(inst) {
+    return typeof inst === "string";
+  }
+  function byOrdered() {
+    var fns = [].slice.apply(arguments, [ 0 ]);
+    return function(req, res) {
+      var scope = this;
+      if (!fns.length) {
+        res("No handers specified");
+        return;
+      }
+      next([].concat(fns));
+      function next(fns) {
+        var fn = fns.shift();
+        if (!fn) {
+          res("All handlers failed");
+          return;
+        }
+        invoke(scope, fn, req, function(err, data) {
+          if (err) {
+            next(fns);
+          } else {
+            res(err, data);
+          }
+        });
+      }
+    };
+  }
+  function bySelector() {
+    var options = [].slice.apply(arguments, [ 0 ]).reduce(function(curr, next) {
+      if (isStr(next)) curr.push({
+        selector: next
+      }); else curr[curr.length - 1].fn = next;
+      return curr;
+    }, []);
+    return function(req, res) {
+      var node = this instanceof nap_document.documentElement.constructor ? this : req.web.view(), called = false;
+      called = options.some(function(option) {
+        if (is(node, option.selector)) {
+          invoke(node, option.fn, req, res);
+          return true;
+        }
+      });
+      if (!called) {
+        res("No matches found");
+      }
+    };
+  }
+  function byMethod(map) {
+    var order = Object.keys(map).map(function(method) {
+      return handleMethod(method, map[method]);
+    });
+    return function(req, res) {
+      var fn = byOrdered.apply(null, order);
+      invoke(this, fn, req, res);
+    };
+  }
+  function handleMethod(method, fn) {
+    return function(req, res) {
+      if (req.method == method) {
+        invoke(this, fn, req, res);
+        return;
+      }
+      res("Method Not Supported");
+    };
+  }
+  function repliesView(fn) {
+    return function(req, res) {
+      var node = this instanceof nap_document.documentElement.constructor ? this : req.web.view();
+      invoke(node, fn, req, res);
+    };
+  }
+  function invoke(scope, fn, req, cb) {
+    var sync = false, args = [ req ];
+    if (fn.length > 1) {
+      args.push(isFn(cb) ? cb : noop);
+    } else {
+      sync = true;
+    }
+    fn.apply(scope, args);
+    if (sync && isFn(cb)) {
+      cb();
+    }
+  }
+  function newWeb() {
+    var web = {}, view = nap_document.documentElement, resources = {}, routes = rhumb.create();
+    web.resource = function(name, ptn, handler) {
+      if (arguments.length == 1) return resources[name];
+      if (arguments.length == 2) {
+        handler = ptn;
+        ptn = name;
+      }
+      resources[name] = {
+        name: name,
+        ptn: ptn,
+        handler: handler
+      };
+      routes.add(ptn, function(params) {
+        return {
+          fn: handler,
+          params: params
+        };
+      });
+      return web;
+    };
+    web.req = function(path, cb) {
+      var req = path;
+      if (isStr(path)) {
+        req = {
+          uri: path,
+          method: "get"
+        };
+      }
+      req.web = web;
+      req.method || (req.method = "get");
+      req.method == "get" && delete req["body"];
+      var match = routes.match(req.uri);
+      if (!match) {
+        cb(req.uri + " not found");
+        return;
+      }
+      req.params = match.params;
+      invoke(this, match.fn, req, cb);
+      return web;
+    };
+    web.view = function(val) {
+      if (!arguments.length) return view;
+      view = val;
+      return web;
+    };
+    web.uri = function(name, params) {
+      var meta = resources[name];
+      if (!meta) throw new Error(name + " not found");
+      var parts = rhumb._parse(meta.ptn);
+      return parts.reduce(function(uri, part) {
+        if (part.type == "var") {
+          return [ uri, params[part.input] ].join("/");
+        }
+        return [ uri, part.input ].join("/");
+      }, "");
+    };
+    return web;
+  }
+  return nap;
+}();
+
+(function() {
+  function t(t, r) {
+    var n = {}, a = function(t, r) {
+      var e = t.shift();
+      if (!e) return r.leaf || !1;
+      if (r.fixed && e in r.fixed) return a(t, r.fixed[e]);
+      if (r.partial) {
+        var i = r.partial.tests, f = i.some(function(t) {
+          if (t.ptn.test(e)) {
+            var a = e.match(t.ptn);
+            return t.vars.forEach(function(t, r) {
+              n[t] = a[r + 1];
+            }), r = t, !0;
+          }
+        });
+        if (f) return a(t, r);
+      }
+      return r.var ? (n[r.var.name] = e, a(t, r.var)) : !1;
+    }, e = a(t, r, n);
+    return e ? {
+      fn: e,
+      params: n
+    } : !1;
+  }
+  function r() {
+    var r = {}, e = {}, i = function(t, r, n) {
+      var a, e = t.shift(), f = !!t.length;
+      if (e) if ("fixed" == e.type) r.fixed || (r.fixed = {}), a = r.fixed[e.input] || (r.fixed[e.input] = {}), 
+      f ? i(t, a, n) : a.leaf = n; else if ("var" == e.type) {
+        if (r.var) throw Error("Ambiguity");
+        a = r.var = {}, a.name = e.input, f ? i(t, a, n) : a.leaf = n;
+      } else if (e.type = "partial") {
+        if (r.partial && r.partial.names[e.name]) throw Error("Ambiguity");
+        r.partial || (r.partial = {
+          names: {},
+          tests: []
+        });
+        var a = {};
+        a.ptn = e.input, a.vars = e.vars, r.partial.names[e.name] = a, r.partial.tests.push(a), 
+        f ? i(t, a, n) : a.leaf = n;
+      }
+    };
+    return r.add = function(t, r) {
+      i(a(t), e, r);
+    }, r.match = function(r) {
+      var a = r.split("/").filter(n), i = t(a, e);
+      return i ? i.fn.apply(i.fn, [ i.params ]) : void 0;
+    }, r;
+  }
+  function n(t) {
+    return !!t;
+  }
+  function a(t) {
+    function r(t) {
+      var r = t.match(u);
+      return {
+        type: "var",
+        input: r[1]
+      };
+    }
+    function a(t) {
+      return {
+        type: "fixed",
+        input: t
+      };
+    }
+    function e(t) {
+      for (var r = t.match(p), n = "", a = t.length, e = 0; a > e && r; ) e += r[0].length, 
+      r[1] && (n += r[1]), n += "([\\w-]+)", r[3] && (n += r[3]), r = t.substr(e).match(p);
+      var i = [], f = t.replace(/{([\w-]+)}/g, function(t, r) {
+        return i.push(r), "{var}";
+      });
+      return {
+        type: "partial",
+        input: RegExp(n),
+        name: f,
+        vars: i
+      };
+    }
+    function i(t) {
+      return t.split("/").filter(n).map(function(t) {
+        return u.test(t) ? r(t) : p.test(t) ? e(t) : a(t);
+      });
+    }
+    function f(t) {
+      for (var r, n = "", a = [], e = 0, u = t.length, p = !0; p && u > e; ) {
+        switch (r = t[e]) {
+         case ")":
+         case "(":
+          p = !1;
+          break;
+
+         default:
+          n += r;
+        }
+        e++;
+      }
+      if (!p) {
+        var s = f(t.substr(e + 1));
+        s.length && a.push(s);
+      }
+      return i(n).concat(a);
+    }
+    var u = /^{(\w+)}$/, p = /([\w'-]+)?{([\w-]+)}([\w'-]+)?/;
+    return "/" == t.trim() ? [ {
+      type: "fixed",
+      input: ""
+    } ] : -1 == t.indexOf("(") ? i(t) : f(t);
+  }
+  rhumb = r(), rhumb.create = r, rhumb._parse = a, rhumb._findInTree = t;
+})();

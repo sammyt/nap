@@ -1,11 +1,15 @@
-(function(){
+nap = (function environment(nap_window){
 
-nap = {}
+var nap = { environment: environment }
+  , nap_window = nap_window || window
+  , nap_document = nap_window.document
+  
 nap.web = newWeb
 nap.negotiate = { 
   selector : bySelector
 , ordered  : byOrdered
-, method : byMethod
+, method   : byMethod
+, invoke   : invoke
 }
 
 nap.replies = {
@@ -14,7 +18,7 @@ nap.replies = {
 
 function noop(){}
 
-var root = document.documentElement
+var root = nap_document.documentElement
   , matchesSelector = root.matchesSelector 
     || root.webkitMatchesSelector 
     || root.mozMatchesSelector 
@@ -80,7 +84,7 @@ function bySelector(){
     )
   
   return function(req, res){
-    var node = this instanceof HTMLElement 
+    var node = this instanceof nap_document.documentElement.constructor 
         ? this 
         : req.web.view()
       , called = false
@@ -123,7 +127,7 @@ function handleMethod(method, fn){
 
 function repliesView(fn){
   return function(req, res){
-    var node = this instanceof HTMLElement 
+    var node = this instanceof nap_document.documentElement.constructor 
       ? this 
       : req.web.view()
 
@@ -150,7 +154,7 @@ function invoke(scope, fn, req, cb){
 
 function newWeb(){
   var web = {}
-    , view = document.documentElement
+    , view = nap_document.documentElement
     , resources = {}
     , routes = rhumb.create()
   
@@ -193,7 +197,10 @@ function newWeb(){
     req.method == "get" && (delete req["body"])
 
     var match = routes.match(req.uri)
-    if(!match) throw Error(req.uri + " not found")
+    if(!match) {
+      cb(req.uri + " not found")
+      return;
+    }
 
     req.params = match.params
 
@@ -232,4 +239,5 @@ function newWeb(){
   return web
 }
 
+return nap
 })()
