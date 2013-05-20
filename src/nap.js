@@ -84,7 +84,7 @@ function bySelector(){
     )
   
   return function(req, res){
-    var node = this instanceof nap_document.documentElement.constructor 
+    var node = this instanceof nap_window.HTMLElement 
         ? this 
         : req.web.view()
       , called = false
@@ -127,7 +127,7 @@ function handleMethod(method, fn){
 
 function repliesView(fn){
   return function(req, res){
-    var node = this instanceof nap_document.documentElement.constructor 
+    var node = this instanceof nap_window.HTMLElement 
       ? this 
       : req.web.view()
 
