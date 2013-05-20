@@ -32,11 +32,11 @@
       
       var myTodo = todo()
 
-      var web = nap.web()
-        .view(d3.select(".container").node())
+      web = nap.web()
+        .view(d3.select("ul").node())
         .resource("/todos", 
           nap.negotiate.method(
-            { get: myTodo.view 
+            { get: nap.replies.view(myTodo.view)
             , send: myTodo.add 
             }
           )
