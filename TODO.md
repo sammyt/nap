@@ -1,36 +1,45 @@
 Direction
----------
+=========
 
 things to think and do
 
-### Clarify the protocol
+## Protocol
 
 Nap should standandise a protocol for interacting with resources.  This should
 include:
 
-* allowed verbs and their semantics
-* message structure and api
-* status codes
-* return type & api of views
-* lifecycle of views handlers
+  * message structure
+  * status codes
+  
 
-### Provide a means of discovering resources
+## Media Types
 
-Would like to be able to query a nap instance to discover what resources it has
+Could devide the media types into namespaces that reflect how they behave. JSON
+for example is just _data_ so is stateless, but a view has state - each view
+could look different depending on how the user interacts etc (`live/view`, 
+`live/object`, `data/json`, `data/html`, `data/csv`)
 
-### Design URL rewriting rules
+### live/view
+
+Define the API requirments of a view handler
+
+### data/json
+
+Defines the basic api for returning stateless json objects 
+
+## Configuration
+
+Want to be able to configure a web of resources in data
+
+## Composing
 
 Want to allow URL rewriting so that a view can *own* the root node, rewriting
 request to update the current state accordingly
 
-### Refine position on hypermedia
+## Hypermedia
 
 Could hypermedia be a first-class construct within nap, and if so what would it
 look like?
 
-### Refine position on modules
-
-If nap has no opinion on it, there should be an easy way to work with the 
-common choices such as amd.
 
 

@@ -4,8 +4,8 @@ describe("Nap", function(){
       var w1 = nap.web()
         , w2 = nap.web()
 
-      expect(w1).to.include.keys("resource", "req", "view")
-      expect(w2).to.include.keys("resource", "req", "view")
+      expect(w1).to.include.keys("resource", "req")
+      expect(w2).to.include.keys("resource", "req")
 
       w1.should.not.equal(w2)
     })
@@ -63,8 +63,9 @@ describe("Nap", function(){
     })
     it("should allow scope to be overridden", function(){
       var div = document.createElement("div")
-        , web = nap.web().view(div)
-        , fn = sinon.spy()
+        , web = nap.web()
+        , spy = sinon.spy()
+        , fn = nap.replies.view(spy, div)
 
       web.resource("/foo/bar", fn)
 
@@ -72,8 +73,8 @@ describe("Nap", function(){
         , r = web.req.bind(ul)
 
       r("/foo/bar")
-      fn.should.have.been.calledOnce
-      fn.should.have.been.calledOn(ul)
+      spy.should.have.been.calledOnce
+      spy.should.have.been.calledOn(ul)
     })
     it("should should take callback for responses", function(){
       var web = nap.web()
@@ -102,7 +103,7 @@ describe("Nap", function(){
       expect(request.method).to.equal("get")
     })
   })
-  describe("web.uri", function(){
+  /*describe("web.uri", function(){
     it("should generate a uri based on a named resource", function(){
       var web = nap.web()
         .resource("demo", "/my-demo", function(){})
@@ -115,7 +116,7 @@ describe("Nap", function(){
 
       web.uri("demo", { id : "foo" }).should.equal("/my-demo/foo")
     })  
-  })
+  })*/
   describe("web.negotiate", function(){
     describe("selector", function(){
       var node
@@ -166,6 +167,7 @@ describe("Nap", function(){
         var o = sinon.spy()
           , t = sinon.spy()
           , cb = sinon.spy()
+          , node = window.document.documentElement
 
         var handler = nap.negotiate.selector(
           ".two", t
@@ -174,7 +176,7 @@ describe("Nap", function(){
 
         var web = nap.web().resource("/foo", handler)
 
-        web.req("/foo", cb)
+        web.req.bind(node)("/foo", cb)
 
         o.should.not.have.been.called
         t.should.not.have.been.called
@@ -235,7 +237,7 @@ describe("Nap", function(){
         cb.should.have.been.calledWith(false)
       })
     })
-    describe("negotiate.method", function(){
+    describe("method", function(){
       it("should only accept methods where handlers are provided", function(){
         var web = nap.web()
           , spy = sinon.spy()
@@ -256,9 +258,7 @@ describe("Nap", function(){
         , fn = sinon.spy()
         , div = document.createElement("div")
 
-      web
-        .resource("/foo/bar", nap.replies.view(fn))
-        .view(div)
+      web.resource("/foo/bar", nap.replies.view(fn, div))
 
       web.req("/foo/bar")
 

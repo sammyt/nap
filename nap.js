@@ -9,9 +9,86 @@ nap = function environment(nap_window) {
     method: byMethod,
     invoke: invoke
   };
-  nap.replies = {
-    view: repliesView
-  };
+  nap.app = newApp;
+  nap.app.view = repliesView;
+  nap.web.fromConfig = webFromConfig;
+  function webFromConfig(config, fn) {
+    var names = Object.keys(config), web = nap.web();
+    names.forEach(function(name) {
+      var resource = config[name], handlers = resource.handlers;
+      web.resource(name, resource.route, baseNegotiation(fn || appHandlers, handlers));
+    });
+    web.config = config;
+    return web;
+  }
+  function baseNegotiation(fn, handlers) {
+    return function(req, res) {
+      var valid = filterbyAccept(req.headers.accept, filterbyMethod(req.method, handlers));
+      nap.negotiate.invoke(this, fn(valid), req, res);
+    };
+  }
+  function filterbyAccept(accept, handlers) {
+    return handlers.filter(function(handler) {
+      return handler.responds == accept;
+    });
+  }
+  function filterbyMethod(method, handlers) {
+    return handlers.filter(function(handler) {
+      return handler.method == method;
+    });
+  }
+  function amd(id) {
+    return function(req, res) {
+      var that = this;
+      require([ id ], function(mod) {
+        nap.negotiate.invoke(that, mod, req, res);
+      });
+    };
+  }
+  function appHandlers(handlers) {
+    return nap.negotiate.ordered.apply(this, handlers.map(function(handler) {
+      if (handler.responds == "app/view") {
+        return nap.app.view(amd(handler.source));
+      }
+      return amd(handler.source);
+    }));
+  }
+  function newApp(web) {
+    var inst = {}, baseView, proxy = {};
+    inst.baseView = function(val) {
+      if (!arguments.length) return baseView;
+      baseView = val;
+      return inst;
+    };
+    inst.config = function(val) {
+      if (!arguments.length) return config;
+      config = val;
+      return inst;
+    };
+    var _req = function(path, cb) {
+      var req = path, locals;
+      if (isStr(path)) {
+        req = {
+          uri: path,
+          method: "get"
+        };
+      }
+      locals = req.locals || {};
+      locals.baseView = inst.baseView();
+      req.locals = locals;
+      return web.req.apply(this, [ req, cb ]);
+    };
+    var resource = function() {
+      var d = web.resource.apply(this, [].slice.apply(arguments, [ 0 ]));
+      return d == web ? proxy : d;
+    };
+    proxy.req = _req;
+    proxy.resource = resource;
+    inst.web = function() {
+      return proxy;
+    };
+    return inst;
+  }
   function noop() {}
   var root = nap_document.documentElement, matchesSelector = root.matchesSelector || root.webkitMatchesSelector || root.mozMatchesSelector || root.msMatchesSelector || root.oMatchesSelector;
   function is(n, s) {
@@ -56,7 +133,7 @@ nap = function environment(nap_window) {
       return curr;
     }, []);
     return function(req, res) {
-      var node = this instanceof nap_document.documentElement.constructor ? this : req.web.view(), called = false;
+      var node = this instanceof nap_window.HTMLElement ? this : req.web.view(), called = false;
       called = options.some(function(option) {
         if (is(node, option.selector)) {
           invoke(node, option.fn, req, res);
@@ -88,7 +165,7 @@ nap = function environment(nap_window) {
   }
   function repliesView(fn) {
     return function(req, res) {
-      var node = this instanceof nap_document.documentElement.constructor ? this : req.web.view();
+      var node = this instanceof nap_window.HTMLElement ? this : req.locals.baseView;
       invoke(node, fn, req, res);
     };
   }
@@ -105,7 +182,7 @@ nap = function environment(nap_window) {
     }
   }
   function newWeb() {
-    var web = {}, view = nap_document.documentElement, resources = {}, routes = rhumb.create();
+    var web = {}, resources = {}, routes = rhumb.create();
     web.resource = function(name, ptn, handler) {
       if (arguments.length == 1) return resources[name];
       if (arguments.length == 2) {
@@ -145,135 +222,205 @@ nap = function environment(nap_window) {
       invoke(this, match.fn, req, cb);
       return web;
     };
-    web.view = function(val) {
-      if (!arguments.length) return view;
-      view = val;
-      return web;
-    };
-    web.uri = function(name, params) {
-      var meta = resources[name];
-      if (!meta) throw new Error(name + " not found");
-      var parts = rhumb._parse(meta.ptn);
-      return parts.reduce(function(uri, part) {
-        if (part.type == "var") {
-          return [ uri, params[part.input] ].join("/");
-        }
-        return [ uri, part.input ].join("/");
-      }, "");
-    };
     return web;
   }
   return nap;
 }();
 
-(function() {
-  function t(t, r) {
-    var n = {}, a = function(t, r) {
-      var e = t.shift();
-      if (!e) return r.leaf || !1;
-      if (r.fixed && e in r.fixed) return a(t, r.fixed[e]);
-      if (r.partial) {
-        var i = r.partial.tests, f = i.some(function(t) {
-          if (t.ptn.test(e)) {
-            var a = e.match(t.ptn);
-            return t.vars.forEach(function(t, r) {
-              n[t] = a[r + 1];
-            }), r = t, !0;
+if (typeof define === "function" && define.amd) {
+  define(function() {
+    return nap;
+  });
+}
+
+rhumb = function() {
+  function findIn(parts, tree) {
+    var params = {};
+    var find = function(remaining, node) {
+      var part = remaining.shift();
+      if (!part) return node.leaf || false;
+      if (node.fixed && part in node.fixed) {
+        return find(remaining, node.fixed[part]);
+      }
+      if (node.partial) {
+        var tests = node.partial.tests, found = tests.some(function(partial) {
+          if (partial.ptn.test(part)) {
+            var match = part.match(partial.ptn);
+            partial.vars.forEach(function(d, i) {
+              params[d] = match[i + 1];
+            });
+            node = partial;
+            return true;
           }
         });
-        if (f) return a(t, r);
+        if (found) {
+          return find(remaining, node);
+        }
       }
-      return r.var ? (n[r.var.name] = e, a(t, r.var)) : !1;
-    }, e = a(t, r, n);
-    return e ? {
-      fn: e,
-      params: n
-    } : !1;
+      if (node.var) {
+        params[node.var.name] = part;
+        return find(remaining, node.var);
+      }
+      return false;
+    };
+    var found = find(parts, tree, params);
+    if (found) {
+      return {
+        fn: found,
+        params: params
+      };
+    }
+    return false;
   }
-  function r() {
-    var r = {}, e = {}, i = function(t, r, n) {
-      var a, e = t.shift(), f = !!t.length;
-      if (e) if ("fixed" == e.type) r.fixed || (r.fixed = {}), a = r.fixed[e.input] || (r.fixed[e.input] = {}), 
-      f ? i(t, a, n) : a.leaf = n; else if ("var" == e.type) {
-        if (r.var) throw Error("Ambiguity");
-        a = r.var = {}, a.name = e.input, f ? i(t, a, n) : a.leaf = n;
-      } else if (e.type = "partial") {
-        if (r.partial && r.partial.names[e.name]) throw Error("Ambiguity");
-        r.partial || (r.partial = {
+  function isArr(inst) {
+    return inst instanceof Array;
+  }
+  function create() {
+    var router = {}, tree = {};
+    function updateTree(parts, node, fn) {
+      var part = parts.shift(), more = !!parts.length, peek;
+      if (isArr(part)) {
+        node.leaf = fn;
+        updateTree(part, node, fn);
+        return;
+      }
+      if (!part) {
+        return;
+      }
+      if (part.type == "fixed") {
+        node["fixed"] || (node["fixed"] = {});
+        peek = node.fixed[part.input] || (node.fixed[part.input] = {});
+      } else if (part.type == "var") {
+        if (node.var) {
+          throw new Error("Ambiguity");
+        }
+        peek = node.var = {};
+        peek.name = part.input;
+      } else if (part.type = "partial") {
+        if (node.partial) {
+          if (node.partial.names[part.name]) {
+            throw new Error("Ambiguity");
+          }
+        }
+        node.partial || (node.partial = {
           names: {},
           tests: []
         });
-        var a = {};
-        a.ptn = e.input, a.vars = e.vars, r.partial.names[e.name] = a, r.partial.tests.push(a), 
-        f ? i(t, a, n) : a.leaf = n;
+        peek = {};
+        peek.ptn = part.input;
+        peek.vars = part.vars;
+        node.partial.names[part.name] = peek;
+        node.partial.tests.push(peek);
+      }
+      if (!more) {
+        peek.leaf = fn;
+      } else {
+        updateTree(parts, peek, fn);
+      }
+    }
+    router.add = function(ptn, callback) {
+      updateTree(parse(ptn), tree, callback);
+    };
+    router.match = function(path) {
+      var parts = path.split("/").filter(falsy), match = findIn(parts, tree);
+      if (match) {
+        return match.fn.apply(match.fn, [ match.params ]);
       }
     };
-    return r.add = function(t, r) {
-      i(a(t), e, r);
-    }, r.match = function(r) {
-      var a = r.split("/").filter(n), i = t(a, e);
-      return i ? i.fn.apply(i.fn, [ i.params ]) : void 0;
-    }, r;
+    return router;
   }
-  function n(t) {
-    return !!t;
+  function falsy(d) {
+    return !!d;
   }
-  function a(t) {
-    function r(t) {
-      var r = t.match(u);
+  function parse(ptn) {
+    var variable = /^{(\w+)}$/, partial = /([\w'-]+)?{([\w-]+)}([\w'-]+)?/, bracks = /^[)]+/;
+    if (ptn.trim() == "/") {
+      return [ {
+        type: "fixed",
+        input: ""
+      } ];
+    }
+    function parseVar(part) {
+      var match = part.match(variable);
       return {
         type: "var",
-        input: r[1]
+        input: match[1]
       };
     }
-    function a(t) {
+    function parseFixed(part) {
       return {
         type: "fixed",
-        input: t
+        input: part
       };
     }
-    function e(t) {
-      for (var r = t.match(p), n = "", a = t.length, e = 0; a > e && r; ) e += r[0].length, 
-      r[1] && (n += r[1]), n += "([\\w-]+)", r[3] && (n += r[3]), r = t.substr(e).match(p);
-      var i = [], f = t.replace(/{([\w-]+)}/g, function(t, r) {
-        return i.push(r), "{var}";
+    function parsePartial(part) {
+      var match = part.match(partial), ptn = "", len = part.length, i = 0;
+      while (i < len && match) {
+        i += match[0].length;
+        if (match[1]) {
+          ptn += match[1];
+        }
+        ptn += "([\\w-]+)";
+        if (match[3]) {
+          ptn += match[3];
+        }
+        match = part.substr(i).match(partial);
+      }
+      var vars = [], name = part.replace(/{([\w-]+)}/g, function(p, d) {
+        vars.push(d);
+        return "{var}";
       });
       return {
         type: "partial",
-        input: RegExp(n),
-        name: f,
-        vars: i
+        input: new RegExp(ptn),
+        name: name,
+        vars: vars
       };
     }
-    function i(t) {
-      return t.split("/").filter(n).map(function(t) {
-        return u.test(t) ? r(t) : p.test(t) ? e(t) : a(t);
+    function parsePtn(ptn) {
+      return ptn.split("/").filter(falsy).map(function(d) {
+        if (variable.test(d)) {
+          return parseVar(d);
+        }
+        if (partial.test(d)) {
+          return parsePartial(d);
+        }
+        return parseFixed(d);
       });
     }
-    function f(t) {
-      for (var r, n = "", a = [], e = 0, u = t.length, p = !0; p && u > e; ) {
-        switch (r = t[e]) {
+    function parseOptional(ptn) {
+      var out = "", list = [];
+      var i = 0, len = ptn.length, curr, onePart = true;
+      while (onePart && i < len) {
+        curr = ptn[i];
+        switch (curr) {
          case ")":
          case "(":
-          p = !1;
+          onePart = false;
           break;
 
          default:
-          n += r;
+          out += curr;
+          break;
         }
-        e++;
+        i++;
       }
-      if (!p) {
-        var s = f(t.substr(e + 1));
-        s.length && a.push(s);
+      if (!onePart) {
+        var next = parseOptional(ptn.substr(i + 1));
+        if (next.length) {
+          list.push(next);
+        }
       }
-      return i(n).concat(a);
+      return parsePtn(out).concat(list);
     }
-    var u = /^{(\w+)}$/, p = /([\w'-]+)?{([\w-]+)}([\w'-]+)?/;
-    return "/" == t.trim() ? [ {
-      type: "fixed",
-      input: ""
-    } ] : -1 == t.indexOf("(") ? i(t) : f(t);
+    if (ptn.indexOf("(") == -1) {
+      return parsePtn(ptn);
+    }
+    return parseOptional(ptn);
   }
-  rhumb = r(), rhumb.create = r, rhumb._parse = a, rhumb._findInTree = t;
-})();
+  var rhumb = create();
+  rhumb.create = create;
+  rhumb._parse = parse;
+  rhumb._findInTree = findIn;
+  return rhumb;
+}();

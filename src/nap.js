@@ -12,9 +12,118 @@ nap.negotiate = {
 , invoke   : invoke
 }
 
-nap.replies = {
-  view : repliesView
+nap.app = newApp
+nap.app.view = repliesView
+nap.web.fromConfig = webFromConfig
+
+function webFromConfig(config, fn) {
+  var names = Object.keys(config)
+    , web = nap.web()
+
+  names.forEach(function(name) {
+    var resource = config[name], handlers = resource.handlers
+    web.resource(
+      name
+    , resource.route
+    , baseNegotiation(fn || appHandlers, handlers)
+    )
+  })
+  web.config = config
+  return web
 }
+
+function baseNegotiation(fn, handlers) {
+  return function(req, res) {
+    var valid = filterbyAccept(
+      req.headers.accept
+    , filterbyMethod(req.method, handlers)
+    )
+    nap.negotiate.invoke(this, fn(valid), req, res)
+  }
+}
+
+function filterbyAccept(accept, handlers) {
+  return handlers.filter(function(handler) {
+    return handler.responds == accept
+  })
+}
+
+function filterbyMethod(method, handlers) {
+  return handlers.filter(function(handler) {
+    return handler.method == method
+  })
+}
+
+function amd(id){
+  return function(req, res){
+    var that = this
+    require([id], function(mod){
+      nap.negotiate.invoke(that, mod, req, res)  
+    })
+  }
+}
+
+function appHandlers(handlers){
+  return nap.negotiate.ordered.apply(this, handlers.map(
+    function(handler){
+      if(handler.responds == 'app/view'){
+        return nap.app.view(amd(handler.source))  
+      }
+      return amd(handler.source)
+    }
+  ))
+}
+
+function newApp(web){
+  var inst = {}
+    , baseView
+    , proxy = {}
+
+  inst.baseView = function(val){
+    if(!arguments.length) return baseView
+    baseView = val
+    return inst
+  }
+
+  inst.config = function(val){
+    if(!arguments.length) return config
+    config = val
+    return inst
+  }
+
+  var _req = function(path, cb){
+    var req = path, locals
+    
+    if(isStr(path)){
+      req = {
+        uri: path
+      , method : "get"
+      }
+    }
+
+    locals = req.locals || {}
+    locals.baseView = inst.baseView()
+
+    req.locals = locals
+
+    return web.req.apply(this,[req, cb])
+  }
+
+  var resource = function(){
+    var d = web.resource.apply(this, [].slice.apply(arguments, [0]))
+    return d == web ? proxy : d
+  }
+
+  proxy.req = _req
+  proxy.resource = resource
+
+  inst.web = function(){
+    return proxy
+  }
+
+  return inst
+}
+
 
 function noop(){}
 
@@ -129,7 +238,7 @@ function repliesView(fn){
   return function(req, res){
     var node = this instanceof nap_window.HTMLElement 
       ? this 
-      : req.web.view()
+      : req.locals.baseView
 
     invoke(node, fn, req, res)
   } 
@@ -154,7 +263,6 @@ function invoke(scope, fn, req, cb){
 
 function newWeb(){
   var web = {}
-    , view = nap_document.documentElement
     , resources = {}
     , routes = rhumb.create()
   
@@ -209,35 +317,12 @@ function newWeb(){
     return web
   }
 
-  web.view = function(val){
-    if(!arguments.length) return view
-    view = val
-    return web
-  }
-
-  web.uri = function(name, params){
-
-    // TODO: support all ptn types
-
-    var meta = resources[name]
-
-    if(!meta) throw new Error(name + " not found")
-
-    var parts = rhumb._parse(meta.ptn)
-
-    return parts.reduce(
-      function(uri, part){
-        if(part.type == "var"){
-          return [uri , params[part.input]].join("/")  
-        }
-        return [uri , part.input].join("/")  
-      }
-    , ""
-    )
-  }
-
   return web
 }
 
 return nap
 })()
+
+if ( typeof define === "function" && define.amd ) {
+  define(function () { return nap })
+}
