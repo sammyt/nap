@@ -6,7 +6,6 @@ delete global.window
 function webFromYaml(path){
  return nap.web.fromConfig(
     configToJson(path)
-  , fromHandlers
   )
 }
 
@@ -22,24 +21,6 @@ nap.web.configToJson = configToJson
 
 nap.express = {}
 nap.express.middleware = middleware
-
-function fromHandlers(handlers){
-  return nap.negotiate.ordered.apply(
-   this 
-  , handlers.map(function(handler){
-      return nap.app.view(amd(handler.source))
-    })
-  )
-}
-
-function amd(id){
-  return function(req, res){
-    var that = this
-    req.locals.require([id], function(mod){
-      nap.negotiate.invoke(that, mod, req, res)
-    })
-  }
-}
 
 function middleware(web){
   var configUrl = '/web-resources.json'
@@ -67,9 +48,9 @@ function middleware(web){
       requirejs.define(name, scoped[name])
     })
 
-    var w = nap.app(web).baseView(node).web()
     
-    w.req(
+    
+    web.req.bind(node)(
       { uri : req.url
       , headers: { accept: 'app/view' } 
       , locals: { require: r }

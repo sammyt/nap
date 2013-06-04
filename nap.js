@@ -3,93 +3,17 @@ nap = function environment(nap_window) {
     environment: environment
   }, nap_window = nap_window || window, nap_document = nap_window.document;
   nap.web = newWeb;
+  nap.web.fromConfig = webFromConfig;
   nap.negotiate = {
     selector: bySelector,
     ordered: byOrdered,
     method: byMethod,
-    invoke: invoke
+    content: byContent
   };
-  nap.app = newApp;
-  nap.app.view = repliesView;
-  nap.web.fromConfig = webFromConfig;
-  function webFromConfig(config, fn) {
-    var names = Object.keys(config), web = nap.web();
-    names.forEach(function(name) {
-      var resource = config[name], handlers = resource.handlers;
-      web.resource(name, resource.route, baseNegotiation(fn || appHandlers, handlers));
-    });
-    web.config = config;
-    return web;
-  }
-  function baseNegotiation(fn, handlers) {
-    return function(req, res) {
-      var valid = filterbyAccept(req.headers.accept, filterbyMethod(req.method, handlers));
-      nap.negotiate.invoke(this, fn(valid), req, res);
-    };
-  }
-  function filterbyAccept(accept, handlers) {
-    return handlers.filter(function(handler) {
-      return handler.responds == accept;
-    });
-  }
-  function filterbyMethod(method, handlers) {
-    return handlers.filter(function(handler) {
-      return handler.method == method;
-    });
-  }
-  function amd(id) {
-    return function(req, res) {
-      var that = this;
-      require([ id ], function(mod) {
-        nap.negotiate.invoke(that, mod, req, res);
-      });
-    };
-  }
-  function appHandlers(handlers) {
-    return nap.negotiate.ordered.apply(this, handlers.map(function(handler) {
-      if (handler.responds == "app/view") {
-        return nap.app.view(amd(handler.source));
-      }
-      return amd(handler.source);
-    }));
-  }
-  function newApp(web) {
-    var inst = {}, baseView, proxy = {};
-    inst.baseView = function(val) {
-      if (!arguments.length) return baseView;
-      baseView = val;
-      return inst;
-    };
-    inst.config = function(val) {
-      if (!arguments.length) return config;
-      config = val;
-      return inst;
-    };
-    var _req = function(path, cb) {
-      var req = path, locals;
-      if (isStr(path)) {
-        req = {
-          uri: path,
-          method: "get"
-        };
-      }
-      locals = req.locals || {};
-      locals.baseView = inst.baseView();
-      req.locals = locals;
-      return web.req.apply(this, [ req, cb ]);
-    };
-    var resource = function() {
-      var d = web.resource.apply(this, [].slice.apply(arguments, [ 0 ]));
-      return d == web ? proxy : d;
-    };
-    proxy.req = _req;
-    proxy.resource = resource;
-    inst.web = function() {
-      return proxy;
-    };
-    return inst;
-  }
-  function noop() {}
+  nap.handlers = {
+    invoke: invoke,
+    view: repliesView
+  };
   var root = nap_document.documentElement, matchesSelector = root.matchesSelector || root.webkitMatchesSelector || root.mozMatchesSelector || root.msMatchesSelector || root.oMatchesSelector;
   function is(n, s) {
     return matchesSelector.call(n, s);
@@ -99,6 +23,51 @@ nap = function environment(nap_window) {
   }
   function isStr(inst) {
     return typeof inst === "string";
+  }
+  function noop() {}
+  function webFromConfig(config) {
+    var names = Object.keys(config), web = nap.web();
+    names.forEach(function(name) {
+      var resource = config[name], specs = resource.handlers;
+      web.resource(name, resource.route, negotiation(specs));
+    });
+    web.config = config;
+    return web;
+  }
+  function negotiation(specs) {
+    var handlers = [];
+    specs.forEach(function(spec) {
+      handlers.push(module(spec.source));
+    });
+    specs.forEach(function(spec, i) {
+      if (spec.responds == "app/view") {
+        handlers[i] = nap.handlers.view(handlers[i]);
+      }
+    });
+    specs.forEach(function(spec, i) {
+      var bycontent = {};
+      bycontent[spec.responds] = handlers[i];
+      handlers[i] = nap.negotiate.content(bycontent);
+    });
+    var methods = {};
+    specs.forEach(function(spec, i) {
+      [].concat(spec.method).forEach(function(method) {
+        methods[method] || (methods[method] = []);
+        methods[method].push(handlers[i]);
+      });
+    });
+    Object.keys(methods).forEach(function(method) {
+      methods[method] = nap.negotiate.ordered.apply(this, methods[method]);
+    });
+    return nap.negotiate.method(methods);
+  }
+  function module(id) {
+    return function(req, res) {
+      var that = this, r = req.locals.require || require;
+      r([ id ], function(mod) {
+        nap.handlers.invoke(that, mod, req, res);
+      });
+    };
   }
   function byOrdered() {
     var fns = [].slice.apply(arguments, [ 0 ]);
@@ -123,6 +92,13 @@ nap = function environment(nap_window) {
           }
         });
       }
+    };
+  }
+  function byContent(pair) {
+    return function(req, res) {
+      var fn = pair[req.headers.accept];
+      console.log(fn);
+      fn && invoke(this, fn, req, res);
     };
   }
   function bySelector() {
@@ -219,6 +195,7 @@ nap = function environment(nap_window) {
         return;
       }
       req.params = match.params;
+      req.locals = req.locals || {};
       invoke(this, match.fn, req, cb);
       return web;
     };
