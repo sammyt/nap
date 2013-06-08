@@ -1,8 +1,7 @@
-nap = (function environment(nap_window){
+define(function(require){
 
-var nap = { environment: environment }
-  , nap_window = nap_window || window
-  , nap_document = nap_window.document
+var nap = {}
+  , rhumb = require('rhumb')
   
 nap.web = newWeb
 nap.web.fromConfig = webFromConfig
@@ -19,17 +18,6 @@ nap.handlers = {
 , view : repliesView
 }
 
-
-var root = nap_document.documentElement
-  , matchesSelector = root.matchesSelector 
-    || root.webkitMatchesSelector 
-    || root.mozMatchesSelector 
-    || root.msMatchesSelector 
-    || root.oMatchesSelector
-
-function is(n, s) {
-  return matchesSelector.call(n, s);
-}
 
 function isFn(inst){
   return typeof inst === "function"
@@ -76,7 +64,7 @@ function negotiation(specs) {
     bycontent[spec.responds] = handlers[i] 
     handlers[i] = nap.negotiate.content(bycontent)
   })
-
+    
   var methods = {}
   specs.forEach(function(spec, i){
     [].concat(spec.method)
@@ -149,6 +137,25 @@ function byContent(pair){
 }
 
 function bySelector(){
+  
+  /*
+  var nap_window = nap_window || window
+    , nap_document = nap_window.document
+    , root = nap_document.documentElement
+      , matchesSelector = root.matchesSelector 
+        || root.webkitMatchesSelector 
+        || root.mozMatchesSelector 
+        || root.msMatchesSelector 
+        || root.oMatchesSelector
+
+  function is(n, s) {
+    return matchesSelector.call(n, s);
+  }
+  */
+
+  function is(n, s) {
+    return true
+  }
 
   var options = [].slice.apply(arguments, [0])
     .reduce(
@@ -289,9 +296,5 @@ function newWeb(){
   return web
 }
 
-return nap
-})()
-
-if ( typeof define === "function" && define.amd ) {
-  define(function () { return nap })
-}
+return nap  
+})

@@ -55,6 +55,13 @@ buildMethodNode(specs){
 }
 
 
+its great that at the moment web is simple, and thus not limited or broken - for example content negotiation is not limited by the default implmentation that you cant opt out of
+
+
+want to make it simple to have a protocol.. and want their to be a dafault one
+
+
+
 
 
 

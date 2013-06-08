@@ -2,8 +2,7 @@
   "name" : "nap"
 , "version" : "0.5.0"
 , "dependencies" : {
-    "js-yaml"   : "*"
-  , "domino"    : "*"
+    "domino"    : "*"
   , "requirejs" : "*"
   }
 }
