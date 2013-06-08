@@ -65,7 +65,7 @@ describe("Nap", function(){
       var div = document.createElement("div")
         , web = nap.web()
         , spy = sinon.spy()
-        , fn = nap.replies.view(spy, div)
+        , fn = nap.handlers.view(spy, div)
 
       web.resource("/foo/bar", fn)
 
@@ -252,13 +252,14 @@ describe("Nap", function(){
       })
     })
   })
-  describe("web.replies", function(){
+  describe("web.handlers", function(){
     it("should invoke on web.view when no node specified", function(){
       var web = nap.web()
         , fn = sinon.spy()
         , div = document.createElement("div")
 
-      web.resource("/foo/bar", nap.replies.view(fn, div))
+      web.view(div)
+      web.resource("/foo/bar", nap.handlers.view(fn))
 
       web.req("/foo/bar")
 

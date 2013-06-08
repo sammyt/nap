@@ -5,8 +5,11 @@
  */
 
 (function(root, factory) {
-  "function" == typeof define && define.amd ? define([], factory) : root.nap = factory();
-})(this, function() {
+  if ("function" == typeof define && define.amd) {
+    define("window", window);
+    define([ "window" ], factory);
+  } else root.nap = factory(root);
+})(this, function(nap_window) {
   var requirejs, require, define;
   (function(undef) {
     function hasProp(obj, prop) {
@@ -345,6 +348,9 @@
     return rhumb;
   });
   define("nap", [ "require", "rhumb" ], function(require) {
+    function is(n, s) {
+      return matchesSelector.call(n, s);
+    }
     function isFn(inst) {
       return "function" == typeof inst;
     }
@@ -414,9 +420,6 @@
       };
     }
     function bySelector() {
-      function is() {
-        return !0;
-      }
       var options = [].slice.apply(arguments, [ 0 ]).reduce(function(curr, next) {
         isStr(next) ? curr.push({
           selector: next
@@ -450,7 +453,7 @@
     }
     function repliesView(fn) {
       return function(req, res) {
-        var node = this instanceof nap_window.HTMLElement ? this : req.locals.baseView;
+        var node = this instanceof nap_window.HTMLElement ? this : req.web.view();
         invoke(node, fn, req, res);
       };
     }
@@ -461,7 +464,12 @@
       sync && isFn(cb) && cb();
     }
     function newWeb() {
-      var web = {}, resources = {}, routes = rhumb.create();
+      var view, web = {}, resources = {}, routes = rhumb.create();
+      web.view = function(val) {
+        if (!arguments.length) return view;
+        view = val;
+        return web;
+      };
       web.resource = function(name, ptn, handler) {
         if (1 == arguments.length) return resources[name];
         if (2 == arguments.length) {
@@ -514,6 +522,7 @@
       invoke: invoke,
       view: repliesView
     };
+    var nap_document = nap_window.document, root = nap_document.documentElement, matchesSelector = root.matchesSelector || root.webkitMatchesSelector || root.mozMatchesSelector || root.msMatchesSelector || root.oMatchesSelector;
     return nap;
   });
   return require("nap");

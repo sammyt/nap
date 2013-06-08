@@ -1,9 +1,10 @@
 (function (root, factory) {
   if (typeof define === 'function' && define.amd) {
     // AMD.
-    define([], factory);
+    define('window', window)
+    define(['window'], factory);
   } else {
     // Browser globals
-    root.nap = factory();
+    root.nap = factory(root);
   }
-}(this, function () {
+}(this, function (nap_window) {

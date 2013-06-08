@@ -18,6 +18,17 @@ nap.handlers = {
 , view : repliesView
 }
 
+var nap_document = nap_window.document
+  , root = nap_document.documentElement
+    , matchesSelector = root.matchesSelector 
+      || root.webkitMatchesSelector 
+      || root.mozMatchesSelector 
+      || root.msMatchesSelector 
+      || root.oMatchesSelector
+
+function is(n, s) {
+  return matchesSelector.call(n, s);
+}
 
 function isFn(inst){
   return typeof inst === "function"
@@ -137,25 +148,6 @@ function byContent(pair){
 }
 
 function bySelector(){
-  
-  /*
-  var nap_window = nap_window || window
-    , nap_document = nap_window.document
-    , root = nap_document.documentElement
-      , matchesSelector = root.matchesSelector 
-        || root.webkitMatchesSelector 
-        || root.mozMatchesSelector 
-        || root.msMatchesSelector 
-        || root.oMatchesSelector
-
-  function is(n, s) {
-    return matchesSelector.call(n, s);
-  }
-  */
-
-  function is(n, s) {
-    return true
-  }
 
   var options = [].slice.apply(arguments, [0])
     .reduce(
@@ -213,7 +205,7 @@ function repliesView(fn){
   return function(req, res){
     var node = this instanceof nap_window.HTMLElement 
       ? this 
-      : req.locals.baseView
+      : req.web.view()
 
     invoke(node, fn, req, res)
   } 
@@ -240,6 +232,13 @@ function newWeb(){
   var web = {}
     , resources = {}
     , routes = rhumb.create()
+    , view
+
+  web.view = function(val){
+    if(!arguments.length) return view
+    view = val
+    return web
+  }
   
   web.resource = function(name, ptn, handler){
     if(arguments.length == 1) return resources[name]

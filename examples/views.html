@@ -2,8 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <script type="text/javascript" src="../components/rhumb/rhumb.js"></script>
-  <script type="text/javascript" src="../src/nap.js"></script>
+  <script type="text/javascript" src="../dist/nap.js"></script>
   <script type="text/javascript" src="../lib/d3/d3.js"></script>
   
   <script type="text/javascript">
@@ -18,7 +17,7 @@
       var web = nap.web()
         // set the default context
         .view(d3.select(".top").node())
-        .resource("/speak/{name}", nap.replies.view(speak))
+        .resource("/speak/{name}", nap.handlers.view(speak))
 
 
       // request into default context

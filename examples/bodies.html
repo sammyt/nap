@@ -2,8 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <script type="text/javascript" src="../components/rhumb/rhumb.js"></script>
-  <script type="text/javascript" src="../src/nap.js"></script>
+  <script type="text/javascript" src="../dist/nap.js"></script>
   <script type="text/javascript" src="../lib/d3/d3.js"></script>
   
   <script type="text/javascript">
@@ -36,7 +35,7 @@
         .view(d3.select("ul").node())
         .resource("/todos", 
           nap.negotiate.method(
-            { get: nap.replies.view(myTodo.view)
+            { get: nap.handlers.view(myTodo.view)
             , send: myTodo.add 
             }
           )
