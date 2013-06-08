@@ -1,7 +1,8 @@
 {
   "name": "nap",
-  "version": "0.0.0",
+  "version": "0.5.0",
   "dependencies": {
     "rhumb": "git://github.com/sammyt/rhumb.git"
+  , "almond": "git://github.com/jrburke/almond.git"
   }
 }
