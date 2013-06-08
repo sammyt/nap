@@ -4,18 +4,27 @@ var nap = {}
   , rhumb = require('rhumb')
   
 nap.web = newWeb
-nap.web.fromConfig = webFromConfig
 
-nap.negotiate = { 
-  selector : bySelector
-, ordered  : byOrdered
-, method   : byMethod
-, content  : byContent
-}
+nap.negotiate = negotiate
+negotiate.selector = bySelector
+negotiate.ordered  = byOrdered
+negotiate.method   = byMethod
 
 nap.handlers = {
   invoke : invoke
 , view : repliesView
+}
+
+function negotiate(method, content, fn){
+  return byMethod(
+    [].concat(method)
+      .reduce(function(curr, next){
+        var arg = {}; arg[content] = fn
+        curr[next] = byContent(arg)
+        return curr
+      }
+      , {})
+  )
 }
 
 var nap_document = nap_window.document
@@ -39,71 +48,6 @@ function isStr(inst){
 }
 
 function noop(){}
-
-function webFromConfig(config) {
-  var names = Object.keys(config)
-    , web = nap.web()
-
-  names.forEach(function(name) {
-    var resource = config[name], specs = resource.handlers
-    web.resource(
-      name
-    , resource.route
-    , negotiation(specs)
-    )
-  })
-  web.config = config
-  return web
-}
-
-function negotiation(specs) {
-
-  var handlers = []
-
-  specs.forEach(function(spec){
-    handlers.push(module(spec.source))
-  })
-
-  specs.forEach(function(spec, i){
-    if(spec.responds == 'app/view'){
-      handlers[i] = nap.handlers.view(handlers[i])
-    }
-  })
-
-  specs.forEach(function(spec, i){
-    var bycontent = {}
-    bycontent[spec.responds] = handlers[i] 
-    handlers[i] = nap.negotiate.content(bycontent)
-  })
-    
-  var methods = {}
-  specs.forEach(function(spec, i){
-    [].concat(spec.method)
-      .forEach(function(method){
-        methods[method] || (methods[method] = [])
-        methods[method].push(handlers[i])
-      })
-  })
-
-  Object.keys(methods).forEach(function(method){
-    methods[method] = nap.negotiate.ordered.apply(this, methods[method])
-  })
-
-
-  return nap.negotiate.method(methods)
-}
-
-function module(id){
-  return function(req, res){
-    var that = this
-      , r = req.locals.require || require
-
-    r([id], function(mod){
-      nap.handlers.invoke(that, mod, req, res)  
-    })
-  }
-}
-
 
 function byOrdered(){
   var fns = [].slice.apply(arguments, [0])
@@ -140,13 +84,6 @@ function byOrdered(){
 }
 
 
-function byContent(pair){
-  return function(req, res){
-    var fn = pair[req.headers.accept]
-    fn && invoke(this, fn, req, res)
-  }
-}
-
 function bySelector(){
 
   var options = [].slice.apply(arguments, [0])
@@ -179,10 +116,21 @@ function bySelector(){
 }
 
 function byMethod(map){
-
   var order = Object.keys(map)
     .map(function(method){
       return handleMethod(method, map[method])
+    })
+
+  return function(req, res){
+    var fn = byOrdered.apply(null, order)
+    invoke(this, fn, req, res)
+  }
+}
+
+function byContent(map){
+  var order = Object.keys(map)
+    .map(function(spec){
+      return handleContent(spec, map[spec])
     })
 
   return function(req, res){
@@ -198,6 +146,16 @@ function handleMethod(method, fn){
       return
     }
     res("Method Not Supported")
+  }
+}
+
+function handleContent(spec, fn){
+  return function(req, res){
+    if(req.headers.accept == spec){ // too simple
+      invoke(this, fn, req, res)
+      return
+    }
+    res("Content not Supported")
   }
 }
 

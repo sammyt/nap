@@ -25,12 +25,24 @@
         res(false, ["a", "b", "c"])
       }
 
+
       // setup this web
       var web = nap.web()
         .resource("/foo/bar", bar)
         .resource("/foo/{thing}/wibble", foo)
         .resource("/speak/{name}", speak)
         .resource("/peas", peas)
+        .resource('/garr', 
+          nap.negotiate('get', 'csv', function(req, res){
+            res(false, 'b,c,d')
+          }))
+
+      web.req(
+        {uri : "/garr" , method : 'get' , headers : { accept : 'csv' }} 
+      , function(err, back){
+          console.log(err, back)
+        }
+      )
 
       // make some requests
       web.req("/foo/bar")
