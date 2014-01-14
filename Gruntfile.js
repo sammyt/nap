@@ -2,7 +2,10 @@ module.exports = function(grunt) {
   grunt.initConfig({
     uglify: {
       options: {
-        beautify: true
+        beautify: {
+          beautify: true
+        , indent_level: 2
+        }
       , mangle: false  
       }
     , nap: {
