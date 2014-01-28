@@ -10,7 +10,7 @@ module.exports = function(grunt) {
       }
     , nap: {
         files: {
-          "nap.js": ["./src/nap.js", "./components/rhumb/rhumb.js"]
+          "nap.js": ["./src/nap.js", "./components/rhumb/dist/rhumb.js"]
         }
       }
     }
