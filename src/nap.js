@@ -9,6 +9,7 @@ nap.negotiate = {
   selector : bySelector
 , ordered  : byOrdered
 , method   : byMethod
+, accept   : byAcceptType
 , invoke   : invoke
 }
 
@@ -125,6 +126,29 @@ function handleMethod(method, fn){
   }
 }
 
+function byAcceptType(map){
+
+  var order = Object.keys(map)
+    .map(function(acceptType){
+      return handleAcceptType(acceptType, map[acceptType])
+    })
+
+  return function(req, res){
+    var fn = byOrdered.apply(null, order)
+    invoke(this, fn, req, res)
+  }
+}
+
+function handleAcceptType(acceptType, fn){
+  return function(req, res){
+    if(req.headers.accept == acceptType){
+      invoke(this, fn, req, res)
+      return
+    }
+    res("Accept-type Not Supported")
+  }
+}
+
 function repliesView(fn){
   return function(req, res){
     var node = this instanceof nap_window.HTMLElement 
@@ -189,12 +213,17 @@ function newWeb(){
       req = {
         uri: path
       , method : "get"
+      , headers : {
+          accept: "html"
+        }
       }
     }
 
     req.web = web
     req.method || (req.method = "get")
     req.method == "get" && (delete req["body"])
+    req.headers || (req.headers = {})
+    req.headers.accept || (req.headers.accept = "html")
 
     var match = routes.match(req.uri)
     if(!match) {
