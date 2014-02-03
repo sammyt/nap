@@ -8,8 +8,8 @@ nap.web = newWeb
 nap.negotiate = { 
   selector : bySelector
 , ordered  : byOrdered
-, method   : byComparator(methodComparator)
-, accept   : byComparator(acceptTypeComparator)
+, method   : byComparator("Method", methodComparator)
+, accept   : byComparator("Accept-type", acceptTypeComparator)
 , invoke   : invoke
 }
 
@@ -111,12 +111,12 @@ function acceptTypeComparator(req, acceptType) {
   return req.headers.accept == acceptType
 }
 
-function byComparator(comparator){
+function byComparator(name, comparator){
   return function(map){
 
     var order = Object.keys(map)
       .map(function(key){
-        return handleKey(key, map[key], comparator)
+        return handleKey(key, map[key], comparator, name)
       })
 
     return function(req, res){
@@ -126,13 +126,13 @@ function byComparator(comparator){
   }
 }
 
-function handleKey(key, fn, matches){
+function handleKey(key, fn, matches, name){
   return function(req, res){
     if(matches(req, key)){
       invoke(this, fn, req, res)
       return
     }
-    res("Not Supported")
+    res(name + " Not Supported")
   }
 }
 
