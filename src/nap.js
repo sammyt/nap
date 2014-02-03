@@ -8,8 +8,8 @@ nap.web = newWeb
 nap.negotiate = { 
   selector : bySelector
 , ordered  : byOrdered
-, method   : byMethod
-, accept   : byAcceptType
+, method   : byComparator(methodComparator)
+, accept   : byComparator(acceptTypeComparator)
 , invoke   : invoke
 }
 
@@ -103,49 +103,36 @@ function bySelector(){
   }
 }
 
-function byMethod(map){
+function methodComparator(req, method) {
+  return req.method == method
+}
 
-  var order = Object.keys(map)
-    .map(function(method){
-      return handleMethod(method, map[method])
-    })
+function acceptTypeComparator(req, acceptType) {
+  return req.headers.accept == acceptType
+}
 
-  return function(req, res){
-    var fn = byOrdered.apply(null, order)
-    invoke(this, fn, req, res)
+function byComparator(comparator){
+  return function(map){
+
+    var order = Object.keys(map)
+      .map(function(key){
+        return handleKey(key, map[key], comparator)
+      })
+
+    return function(req, res){
+      var fn = byOrdered.apply(null, order)
+      invoke(this, fn, req, res)
+    }
   }
 }
 
-function handleMethod(method, fn){
+function handleKey(key, fn, matches){
   return function(req, res){
-    if(req.method == method){
+    if(matches(req, key)){
       invoke(this, fn, req, res)
       return
     }
-    res("Method Not Supported")
-  }
-}
-
-function byAcceptType(map){
-
-  var order = Object.keys(map)
-    .map(function(acceptType){
-      return handleAcceptType(acceptType, map[acceptType])
-    })
-
-  return function(req, res){
-    var fn = byOrdered.apply(null, order)
-    invoke(this, fn, req, res)
-  }
-}
-
-function handleAcceptType(acceptType, fn){
-  return function(req, res){
-    if(req.headers.accept == acceptType){
-      invoke(this, fn, req, res)
-      return
-    }
-    res("Accept-type Not Supported")
+    res("Not Supported")
   }
 }
 

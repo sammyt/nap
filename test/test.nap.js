@@ -286,18 +286,18 @@ describe("Nap", function(){
 
         web.resource(
           "/sausage" 
-        , nap.negotiate.accept(
+        , nap.negotiate.method(
             { 
-              json : nap.negotiate.method(
+              get : nap.negotiate.accept(
                 { 
-                  get : getDataSpy 
-                , send : sendDataSpy 
+                  html : getViewSpy 
+                , json : getDataSpy 
                 }
               ) 
-            , html : nap.negotiate.method(
+            , send : nap.negotiate.accept(
                 { 
-                  get : getViewSpy 
-                , send : sendViewSpy 
+                  html : sendViewSpy 
+                , json : sendDataSpy 
                 }
               ) 
             }

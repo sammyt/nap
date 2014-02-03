@@ -49,6 +49,20 @@ nap = function environment(nap_window) {
       return req.method == method ? void invoke(this, fn, req, res) : void res("Method Not Supported");
     };
   }
+  function byAcceptType(map) {
+    var order = Object.keys(map).map(function(acceptType) {
+      return handleAcceptType(acceptType, map[acceptType]);
+    });
+    return function(req, res) {
+      var fn = byOrdered.apply(null, order);
+      invoke(this, fn, req, res);
+    };
+  }
+  function handleAcceptType(acceptType, fn) {
+    return function(req, res) {
+      return req.headers.accept == acceptType ? void invoke(this, fn, req, res) : void res("Accept-type Not Supported");
+    };
+  }
   function repliesView(fn) {
     return function(req, res) {
       var node = this instanceof nap_window.HTMLElement ? this : req.web.view();
@@ -78,8 +92,12 @@ nap = function environment(nap_window) {
       var req = path;
       isStr(path) && (req = {
         uri: path,
-        method: "get"
-      }), req.web = web, req.method || (req.method = "get"), "get" == req.method && delete req.body;
+        method: "get",
+        headers: {
+          accept: "html"
+        }
+      }), req.web = web, req.method || (req.method = "get"), "get" == req.method && delete req.body, 
+      req.headers || (req.headers = {}), req.headers.accept || (req.headers.accept = "html");
       var match = routes.match(req.uri);
       return match ? (req.params = match.params, invoke(this, match.fn, req, cb), web) : void cb(req.uri + " not found");
     }, web.view = function(val) {
@@ -100,6 +118,7 @@ nap = function environment(nap_window) {
     selector: bySelector,
     ordered: byOrdered,
     method: byMethod,
+    accept: byAcceptType,
     invoke: invoke
   }, nap.replies = {
     view: repliesView
