@@ -101,6 +101,18 @@ describe("Nap", function(){
 
       expect(request.method).to.equal("get")
     })
+    it("be default requests have accept type of 'html'", function(){
+      var web = nap.web()
+        , request
+
+      web.resource("/yo", function(req){
+        request = req
+      })
+
+      web.req("/yo")
+
+      expect(request.headers.accept).to.equal("html")
+    })
   })
   describe("web.uri", function(){
     it("should generate a uri based on a named resource", function(){
@@ -247,6 +259,60 @@ describe("Nap", function(){
         web.req({ uri: "/sausage", method : "send" })
 
         spy.should.have.been.calledTwice
+      })
+    })
+    describe("negotiate.accept", function(){
+      it("should only accept accept-types where handlers are provided", function(){
+        var web = nap.web()
+          , spy = sinon.spy()
+
+        web.resource("/sausage" , nap.negotiate.accept({html : spy}))
+
+        web.req("/sausage")
+        web.req({ uri: "/sausage" })
+        web.req({ uri: "/sausage", headers : { accept : "html" } })
+        web.req({ uri: "/sausage", headers : { accept : "json" } })
+
+        spy.should.have.been.calledThrice
+      })
+    })
+    describe("negotiate.accept.method", function(){
+      it("should negotiate accept-type and method", function(){
+        var web = nap.web()
+          , getDataSpy = sinon.spy()
+          , sendDataSpy = sinon.spy()
+          , getViewSpy = sinon.spy()
+          , sendViewSpy = sinon.spy()
+
+        web.resource(
+          "/sausage" 
+        , nap.negotiate.method(
+            { 
+              get : nap.negotiate.accept(
+                { 
+                  html : getViewSpy 
+                , json : getDataSpy 
+                }
+              ) 
+            , send : nap.negotiate.accept(
+                { 
+                  html : sendViewSpy 
+                , json : sendDataSpy 
+                }
+              ) 
+            }
+          )
+        )
+
+        web.req({ uri: "/sausage", headers : { accept : "json" } })
+        web.req({ uri: "/sausage", headers : { accept : "html" } })
+        web.req({ uri: "/sausage", headers : { accept : "json" } , method : "send" })
+        web.req({ uri: "/sausage", headers : { accept : "html" } , method : "send" })
+
+        getDataSpy.should.have.been.calledOnce
+        getViewSpy.should.have.been.calledOnce
+        sendViewSpy.should.have.been.calledOnce
+        sendViewSpy.should.have.been.calledOnce
       })
     })
   })

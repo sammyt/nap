@@ -8,7 +8,8 @@ nap.web = newWeb
 nap.negotiate = { 
   selector : bySelector
 , ordered  : byOrdered
-, method   : byMethod
+, method   : byComparator("Method", methodComparator)
+, accept   : byComparator("Accept-type", acceptTypeComparator)
 , invoke   : invoke
 }
 
@@ -102,26 +103,36 @@ function bySelector(){
   }
 }
 
-function byMethod(map){
+function methodComparator(req, method) {
+  return req.method == method
+}
 
-  var order = Object.keys(map)
-    .map(function(method){
-      return handleMethod(method, map[method])
-    })
+function acceptTypeComparator(req, acceptType) {
+  return req.headers.accept == acceptType
+}
 
-  return function(req, res){
-    var fn = byOrdered.apply(null, order)
-    invoke(this, fn, req, res)
+function byComparator(name, comparator){
+  return function(map){
+
+    var order = Object.keys(map)
+      .map(function(key){
+        return handleKey(key, map[key], comparator, name)
+      })
+
+    return function(req, res){
+      var fn = byOrdered.apply(null, order)
+      invoke(this, fn, req, res)
+    }
   }
 }
 
-function handleMethod(method, fn){
+function handleKey(key, fn, matches, name){
   return function(req, res){
-    if(req.method == method){
+    if(matches(req, key)){
       invoke(this, fn, req, res)
       return
     }
-    res("Method Not Supported")
+    res(name + " Not Supported")
   }
 }
 
@@ -189,12 +200,17 @@ function newWeb(){
       req = {
         uri: path
       , method : "get"
+      , headers : {
+          accept: "html"
+        }
       }
     }
 
     req.web = web
     req.method || (req.method = "get")
     req.method == "get" && (delete req["body"])
+    req.headers || (req.headers = {})
+    req.headers.accept || (req.headers.accept = "html")
 
     var match = routes.match(req.uri)
     if(!match) {
