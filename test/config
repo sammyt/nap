@@ -1,0 +1,48 @@
+{
+  "resources" : [
+    {
+      "name" : "app"
+    , "path" : "/app/{id}"
+    , "methods" : {
+        "get" : {
+          "application/x.nap.view" : {
+            ".big" : "platform/app/big"
+            ".small" : "platform/app/small"
+          } 
+        , "application/json" : "platform/app/data"
+        }
+      , "send" : {
+          "application/json" : "platform/app/data"
+        }
+      }
+    }
+  ]
+}
+
+web.resource(
+  "app"
+, "/app/{id}" 
+, nap.negotiate.method(
+    {
+      get : nap.negotiate.accept(
+        {
+          "application/x.nap.view" : function(req, res) {
+            res(
+              null
+            , nap.negotiate.selector(
+                ".big" , require(['platform/app/big']
+              , ".small" , require(['platform/app/small']
+              )
+            )
+          }
+        , 'application/json' : require(['platform/app/data'])
+        }
+      )
+    , send : nap.negotiate.accept(
+        {
+          'application/json' : require(['platform/app/data'])
+        }
+      )
+    }
+  )
+)
