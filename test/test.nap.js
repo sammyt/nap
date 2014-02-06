@@ -4,8 +4,8 @@ describe("Nap", function(){
       var w1 = nap.web()
         , w2 = nap.web()
 
-      expect(w1).to.include.keys("resource", "req", "view")
-      expect(w2).to.include.keys("resource", "req", "view")
+      expect(w1).to.include.keys("resource", "req")
+      expect(w2).to.include.keys("resource", "req")
 
       w1.should.not.equal(w2)
     })
@@ -63,7 +63,7 @@ describe("Nap", function(){
     })
     it("should allow scope to be overridden", function(){
       var div = document.createElement("div")
-        , web = nap.web().view(div)
+        , web = nap.web()
         , fn = sinon.spy()
 
       web.resource("/foo/bar", fn)
@@ -103,7 +103,7 @@ describe("Nap", function(){
 
       expect(request.method).to.equal("get")
     })
-    it("be default requests have accept type of 'html'", function(){
+    it("be default requests have accept type of 'application/x.nap.view'", function(){
       var web = nap.web()
         , request
 
@@ -113,7 +113,7 @@ describe("Nap", function(){
 
       web.req("/yo")
 
-      expect(request.headers.accept).to.equal("html")
+      expect(request.headers.accept).to.equal("application/x.nap.view")
     })
   })
   describe("web.uri", function(){
@@ -274,11 +274,11 @@ describe("Nap", function(){
         var web = nap.web()
           , spy = sinon.spy()
 
-        web.resource("/sausage" , nap.negotiate.accept({html : spy}))
+        web.resource("/sausage" , nap.negotiate.accept({"application/x.nap.view" : spy}))
 
         web.req("/sausage")
         web.req({ uri: "/sausage" })
-        web.req({ uri: "/sausage", headers : { accept : "html" } })
+        web.req({ uri: "/sausage", headers : { accept : "application/x.nap.view" } })
         web.req({ uri: "/sausage", headers : { accept : "json" } })
 
         spy.should.have.been.calledThrice
@@ -365,23 +365,6 @@ describe("Nap", function(){
       view.call(node, res.params)
     }
   }
-
-  describe("web.replies", function(){
-    it("should invoke on web.view when no node specified", function(){
-      var web = nap.web()
-        , fn = sinon.spy()
-        , div = document.createElement("div")
-
-      web
-        .resource("/foo/bar", nap.replies.view(fn))
-        .view(div)
-
-      web.req("/foo/bar")
-
-      fn.should.have.been.calledOnce
-      fn.should.have.been.calledOn(div)
-    })
-  })
 })
 
 

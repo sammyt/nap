@@ -9,7 +9,7 @@ nap.negotiate = {
   selector : bySelector
 , ordered  : byOrdered
 , method   : byComparator(matchMethod, noop, "405 Method Not Allowed")
-, accept   : byComparator(matchAcceptType, updateContentType, "415 Unsupported Media Type")
+, accept   : byComparator(matchAcceptType, setContentType, "415 Unsupported Media Type")
 , invoke   : invoke
 }
 
@@ -107,7 +107,7 @@ function matchAcceptType(req, acceptType) {
   return req.headers.accept == acceptType
 }
 
-function updateContentType(res, value) {
+function setContentType(res, value) {
   res.headers["Content-type"] = value
 }
 
