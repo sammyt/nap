@@ -8,9 +8,21 @@ nap.web = newWeb
 nap.negotiate = { 
   selector : bySelector
 , ordered  : byOrdered
-, method   : byComparator(matchMethod, noop, "405 Method Not Allowed")
-, accept   : byComparator(matchAcceptType, setContentType, "415 Unsupported Media Type")
+, method   : byComparator(matchMethod, "405 Method Not Allowed")
+, accept   : byComparator(matchAcceptType, "415 Unsupported Media Type", setContentType)
 , invoke   : invoke
+}
+nap.into = into
+
+function into(node) {
+  return function(res) {
+    if(res.status != "200 OK") {
+      console.log(res.status)
+      return
+    }
+    var view = res.body
+    view.call(node, res.params)
+  }
 }
 
 function noop(){}
@@ -111,7 +123,7 @@ function setContentType(res, value) {
   res.headers["Content-type"] = value
 }
 
-function byComparator(matches, update, error){
+function byComparator(matches, error, update){
   return function(map){
 
     var order = Object.keys(map)
@@ -129,7 +141,7 @@ function byComparator(matches, update, error){
 function handleKey(key, fn, matches, update){
   return function(req, res, response){
     if(matches(req, key)){
-      update(response, key)
+      update && update(response, key)
       invoke(this, fn, req, res, response)
       return
     }
@@ -225,8 +237,6 @@ function newWeb(){
   }
 
   web.uri = function(name, params){
-
-    // TODO: support all ptn types
 
     var meta = resources[name]
 

@@ -351,20 +351,9 @@ describe("Nap", function(){
           }
         )
       )
-      web.req({uri:"/sausage/123", method:"get", headers:{accept:"application/x.nap.view"}}, into(document.querySelectorAll("div")[0]))
+      web.req({uri:"/sausage/123", method:"get", headers:{accept:"application/x.nap.view"}}, nap.into(document.querySelectorAll("div")[0]))
     })
   })
-
-  function into(node) {
-    return function(res) {
-      if(res.status != "200 OK") {
-        console.log(res.status)
-        return
-      }
-      var view = res.body
-      view.call(node, res.params)
-    }
-  }
 })
 
 
