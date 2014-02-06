@@ -327,6 +327,7 @@ describe("Nap", function(){
   describe("negotiate.accept.method", function(){
     it("should respond with a response object", function(){
       var web = nap.web()
+        , into = nap.into
       web.resource(
         "/sausage/{id}" 
       , nap.negotiate.method(
@@ -351,7 +352,7 @@ describe("Nap", function(){
           }
         )
       )
-      web.req({uri:"/sausage/123", method:"get", headers:{accept:"application/x.nap.view"}}, nap.into(document.querySelectorAll("div")[0]))
+      web.req({uri:"/sausage/123", method:"get", headers:{accept:"application/x.nap.view"}}, into(document.querySelectorAll("div")[0]))
     })
   })
 })
