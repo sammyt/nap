@@ -8,8 +8,8 @@ nap.web = newWeb
 nap.negotiate = { 
   selector : bySelector
 , ordered  : byOrdered
-, method   : byMethod
-, accept   : byAcceptType
+, method   : byComparator(methodGetter, noop, "405 Method Not Allowed")
+, accept   : byComparator(acceptTypeGetter, acceptTypeSetter, "415 Unsupported Media Type")
 , invoke   : invoke
 }
 
@@ -38,13 +38,13 @@ function isStr(inst){
   return typeof inst === "string"
 }
 
-function byOrdered(){
-  var fns = [].slice.apply(arguments, [0])
+function byOrdered(fns, error){
   
-  return function(req, res){
+  return function(req, res, response){
     var scope = this
     if(!fns.length){
-      res("No handers specified")
+      !response.status && (response.status = error)
+      res(error || "No handers specified")
       return
     }
 
@@ -53,7 +53,8 @@ function byOrdered(){
     function next(fns){
       var fn = fns.shift()
       if(!fn){
-        res("All handlers failed")
+        !response.status && (response.status = error)
+        res(error || "All handlers failed")
         return
       }
       invoke(
@@ -67,6 +68,7 @@ function byOrdered(){
             res(err, data)
           }
         }
+      , response
       )
     }
   }
@@ -84,15 +86,13 @@ function bySelector(){
     , []
     )
   
-  return function(req, res){
-    var node = this instanceof nap_window.HTMLElement 
-        ? this 
-        : req.web.view()
+  return function(res){
+    var node = this
       , called = false
 
     called = options.some(function(option){
       if(is(node, option.selector)){
-        invoke(node, option.fn, req, res)
+        option.fn.call(node, res)
         return true
       }
     })
@@ -103,76 +103,63 @@ function bySelector(){
   }
 }
 
-function byMethod(map){
+function methodGetter(req) {
+  return req.method
+}
 
-  var order = Object.keys(map)
-    .map(function(method){
-      return handleMethod(method, map[method])
-    })
+function acceptTypeGetter(req) {
+  return req.headers.accept
+}
 
-  return function(req, res){
-    var fn = byOrdered.apply(null, order)
-    invoke(this, fn, req, res)
+function acceptTypeSetter(res, value) {
+  res.headers["Content-type"] = value
+}
+
+function byComparator(getter, setter, error){
+  return function(map){
+
+    var order = Object.keys(map)
+      .map(function(key){
+        return handleKey(key, map[key], getter, setter)
+      })
+
+    return function(req, res, response){
+      var fn = byOrdered.call(null, order, error)
+      invoke(this, fn, req, res, response)
+    }
   }
 }
 
-function handleMethod(method, fn){
-  return function(req, res){
-    if(req.method == method){
-      invoke(this, fn, req, res)
+function handleKey(key, fn, getField, setField){
+  return function(req, res, response){
+    if(getField(req) == key){
+      setField(response, key)
+      invoke(this, fn, req, res, response)
       return
     }
-    res("Method Not Supported")
-  }
-}
-
-function byAcceptType(map){
-
-  var order = Object.keys(map)
-    .map(function(acceptType){
-      return handleAcceptType(acceptType, map[acceptType])
-    })
-
-  return function(req, res){
-    var fn = byOrdered.apply(null, order)
-    invoke(this, fn, req, res)
-  }
-}
-
-function handleAcceptType(acceptType, fn){
-  return function(req, res){
-    if(req.headers.accept == acceptType){
-      invoke(this, fn, req, res)
-      return
-    }
-    res("Accept-type Not Supported")
+    res("No Match")
   }
 }
 
 function repliesView(fn){
-  return function(req, res){
+  return function(req, res, response){
     var node = this instanceof nap_window.HTMLElement 
       ? this 
       : req.web.view()
 
-    invoke(node, fn, req, res)
+    invoke(node, fn, req, res, response)
   } 
 }
 
-function invoke(scope, fn, req, cb){
-  var sync = false
-    , args = [req]
-    
-  if(fn.length > 1) {
-    args.push(isFn(cb) ? cb : noop)
-  } else {
-    sync = true
-  }
-  
-  fn.apply(scope, args);
+function invoke(scope, fn, req, cb, response){
+  fn.call(scope, req, cb, response)
+}
 
-  if(sync && isFn(cb)){ 
-    cb() 
+function respond(cb, res) {
+  return function(err, data) {
+    res.body = data
+    !res.status && (res.status = err || "200 OK")
+    cb(res)
   }
 }
 
@@ -208,13 +195,15 @@ function newWeb(){
   web.req = function(path, cb){
     
     var req = path
+      , cb = cb || noop 
+      , response
     
     if(isStr(path)){
       req = {
         uri: path
       , method : "get"
       , headers : {
-          accept: "html"
+          accept: "application/x.nap.view"
         }
       }
     }
@@ -223,7 +212,7 @@ function newWeb(){
     req.method || (req.method = "get")
     req.method == "get" && (delete req["body"])
     req.headers || (req.headers = {})
-    req.headers.accept || (req.headers.accept = "html")
+    req.headers.accept || (req.headers.accept = "application/x.nap.view")
 
     var match = routes.match(req.uri)
     if(!match) {
@@ -233,7 +222,18 @@ function newWeb(){
 
     req.params = match.params
 
-    invoke(this, match.fn, req, cb)
+    response = {
+      uri : req.uri
+    , method : req.method
+    , status : null
+    , headers : {
+        "Content-type" : "application/x.nap.view"
+      } 
+    , body : null
+    , params : req.params
+    }
+
+    invoke(this, match.fn, req, respond(cb, response), response)
 
     return web
   }
