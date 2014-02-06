@@ -343,12 +343,15 @@ describe("Nap", function(){
                     )
                   )
                 }
+              , "application/json" : function(req, res) {
+                  res(null, "json")
+                }
               }
             )
           }
         )
       )
-      web.req({uri:"/sausage/123", method:"get", headers:{accept:"application/json"}}, into(document.querySelectorAll("div")[0]))
+      web.req({uri:"/sausage/123", method:"get", headers:{accept:"application/x.nap.view"}}, into(document.querySelectorAll("div")[0]))
     })
   })
 

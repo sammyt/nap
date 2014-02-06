@@ -8,13 +8,9 @@ nap.web = newWeb
 nap.negotiate = { 
   selector : bySelector
 , ordered  : byOrdered
-, method   : byComparator(methodGetter, noop, "405 Method Not Allowed")
-, accept   : byComparator(acceptTypeGetter, acceptTypeSetter, "415 Unsupported Media Type")
+, method   : byComparator(matchMethod, noop, "405 Method Not Allowed")
+, accept   : byComparator(matchAcceptType, updateContentType, "415 Unsupported Media Type")
 , invoke   : invoke
-}
-
-nap.replies = {
-  view : repliesView
 }
 
 function noop(){}
@@ -103,24 +99,24 @@ function bySelector(){
   }
 }
 
-function methodGetter(req) {
-  return req.method
+function matchMethod(req, method) {
+  return req.method == method
 }
 
-function acceptTypeGetter(req) {
-  return req.headers.accept
+function matchAcceptType(req, acceptType) {
+  return req.headers.accept == acceptType
 }
 
-function acceptTypeSetter(res, value) {
+function updateContentType(res, value) {
   res.headers["Content-type"] = value
 }
 
-function byComparator(getter, setter, error){
+function byComparator(matches, update, error){
   return function(map){
 
     var order = Object.keys(map)
       .map(function(key){
-        return handleKey(key, map[key], getter, setter)
+        return handleKey(key, map[key], matches, update)
       })
 
     return function(req, res, response){
@@ -130,25 +126,15 @@ function byComparator(getter, setter, error){
   }
 }
 
-function handleKey(key, fn, getField, setField){
+function handleKey(key, fn, matches, update){
   return function(req, res, response){
-    if(getField(req) == key){
-      setField(response, key)
+    if(matches(req, key)){
+      update(response, key)
       invoke(this, fn, req, res, response)
       return
     }
     res("No Match")
   }
-}
-
-function repliesView(fn){
-  return function(req, res, response){
-    var node = this instanceof nap_window.HTMLElement 
-      ? this 
-      : req.web.view()
-
-    invoke(node, fn, req, res, response)
-  } 
 }
 
 function invoke(scope, fn, req, cb, response){
@@ -235,12 +221,6 @@ function newWeb(){
 
     invoke(this, match.fn, req, respond(cb, response), response)
 
-    return web
-  }
-
-  web.view = function(val){
-    if(!arguments.length) return view
-    view = val
     return web
   }
 
