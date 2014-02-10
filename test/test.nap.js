@@ -61,32 +61,32 @@ describe("Nap", function(){
       arg.uri.should.equal("/foo/bar")
       arg.params.should.eql({})
     })
-    it("should allow scope to be overridden", function(){
-      var div = document.createElement("div")
-        , web = nap.web()
-        , fn = sinon.spy()
-
-      web.resource("/foo/bar", fn)
-
-      var ul = document.createElement("ul")
-        , r = web.req.bind(ul)
-
-      r("/foo/bar")
-      fn.should.have.been.calledOnce
-      fn.should.have.been.calledOn(ul)
-    })
     it("should should take callback for responses", function(){
       var web = nap.web()
         , cb = sinon.spy()
 
-      web.resource("/foo/bar", function(req, res){
-        res(false, "where am i?")
-      })
+      web.resource("/foo/bar", nap.negotiate.method(
+          {
+            get : function(req, res){
+              console.log("resource scope: ", this)
+              this.status = "oops"
+              res(null, "where am i?")
+            }
+          }
+        )
+      )
 
+      web.resource("/foo/bar2", function(req, res){
+          console.log("resource2 scope: ", this)
+          this.status = "xxxxxxxxxx"
+          res(null, "where am i?")
+        }
+      )
 
       web.req("/foo/bar", cb)
+      web.req("/foo/bar2", cb)
 
-      cb.should.have.been.calledOnce
+      cb.should.have.been.calledTwice
       cb.args[0][0].body.should.equal("where am i?")
       cb.args[0][0].status.should.equal("200 OK")
       cb.args[0][0].method.should.equal("get")
@@ -151,9 +151,7 @@ describe("Nap", function(){
         , ".two" , t
         )
 
-        var web = nap.web().resource("/foo", handler)
-
-        web.req.bind(one)("/foo")
+        handler.bind(one)()
 
         o.should.have.been.calledOnce
         t.should.not.have.been.called
@@ -169,15 +167,14 @@ describe("Nap", function(){
         , "*" , t
         )
 
-        var web = nap.web().resource("/foo", handler)
-
-        web.req.bind(one)("/foo")
+        handler.bind(one)()
 
         o.should.have.been.calledOnce
         t.should.not.have.been.called
       })
- /*     it("should fail when no selector matches", function(){
-        var o = sinon.spy()
+      it("should fail when no selector matches", function(){
+        var three = node.append("span").classed("three", true).node()
+          , o = sinon.spy()
           , t = sinon.spy()
           , cb = sinon.spy()
 
@@ -186,19 +183,17 @@ describe("Nap", function(){
         , ".one", o
         )
 
-        var web = nap.web().resource("/foo", handler)
-
-        web.req("/foo", cb)
+        handler.bind(three)(cb)
 
         o.should.not.have.been.called
         t.should.not.have.been.called
 
         cb.should.have.been.calledOnce
         cb.should.have.been.calledWith("No matches found")
-      })*/
+      })
     })
     describe("ordered", function(){
-/*      it("should try handlers in order they are added", function(){
+      it("should try handlers in order they are added", function(){
         var calls = []
 
         nap.web().resource(
@@ -210,11 +205,11 @@ describe("Nap", function(){
           )
         )
         .req("/nothing", function(res) {
-          console.log(res)
+          //console.log(res)
         })
 
         calls.should.eql(["one", "two"])
-      })*/
+      })
       it("should fail when all handers fail", function(){
         var calls = []
           , cb = sinon.spy()
@@ -231,7 +226,7 @@ describe("Nap", function(){
 
         calls.should.eql(["one", "two"])
         cb.should.have.been.calledOnce
-        console.log(cb.args[0][0])
+        //console.log(cb.args[0][0])
         cb.args[0][0].status.should.equal("All handlers failed")
       })
 /*      it("should only call handers until one succeeds", function(){

@@ -10,7 +10,6 @@ nap.negotiate = {
 , ordered  : byOrdered
 , method   : byComparator(matchMethod, "405 Method Not Allowed")
 , accept   : byComparator(matchAcceptType, "415 Unsupported Media Type", setContentType)
-, invoke   : invoke
 }
 nap.into = into
 
@@ -77,10 +76,10 @@ function bySelector(){
 
 function byOrdered(fns, error){
   
-  return function(req, res, response){
+  return function(req, res){
     var scope = this
     if(!fns.length){
-      !response.status && (response.status = error)
+      !scope.status && (scope.status = error)
       res(error || "No handers specified")
       return
     }
@@ -90,13 +89,13 @@ function byOrdered(fns, error){
     function next(fns){
       var fn = fns.shift()
       if(!fn){
-        !response.status && (response.status = error)
+        !scope.status && (scope.status = error)
         res(error || "All handlers failed")
         return
       }
-      invoke(
+
+      fn.call(
         scope
-      , fn
       , req
       , function(err, data){
           if(err){
@@ -105,7 +104,6 @@ function byOrdered(fns, error){
             res(err, data)
           }
         }
-      , response
       )
     }
   }
@@ -131,33 +129,37 @@ function byComparator(matches, error, update){
         return handleKey(key, map[key], matches, update)
       })
 
-    return function(req, res, response){
+    function handler(req, res){
       var fn = byOrdered.call(null, order, error)
-      invoke(this, fn, req, res, response)
+      fn.call(this, req, res)
     }
+    
+    handler.scoped = true
+    return handler
   }
 }
 
 function handleKey(key, fn, matches, update){
-  return function(req, res, response){
+  return function(req, res){
     if(matches(req, key)){
-      update && update(response, key)
-      invoke(this, fn, req, res, response)
+      update && update(this, key)
+      invoke(this, fn, req, res)
       return
     }
     res("No Match")
   }
 }
 
-function invoke(scope, fn, req, cb, response){
-  fn.call(scope, req, cb, response)
+function invoke(scope, fn, req, cb){
+  scope = fn.scoped ? scope : null
+  fn.call(scope, req, cb)
 }
 
-function respond(cb, res) {
+function response(cb, res) {
   return function(err, data) {
     res.body = data
     !res.status && (res.status = err || "200 OK")
-    cb(res)
+    cb.call(null, res)
   }
 }
 
@@ -194,7 +196,7 @@ function newWeb(){
     
     var req = path
       , cb = cb || noop 
-      , response
+      , res
     
     if(isStr(path)){
       req = {
@@ -212,24 +214,23 @@ function newWeb(){
     req.headers || (req.headers = {})
     req.headers.accept || (req.headers.accept = "application/x.nap.view")
 
-    response = {
+    res = {
       uri : req.uri
     , method : req.method
     , headers : {} 
-    , params : req.params
     }
 
     var match = routes.match(req.uri)
 
     if(!match) {
-      response.status = "404 Not Found"
-      cb(response)
+      res.status = "404 Not Found"
+      cb(res)
       return
     }
 
-    req.params = match.params
+    req.params = res.params = match.params
 
-    invoke(this, match.fn, req, respond(cb, response), response)
+    invoke(res, match.fn, req, response(cb, res))
 
     return web
   }
