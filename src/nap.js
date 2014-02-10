@@ -46,6 +46,35 @@ function isStr(inst){
   return typeof inst === "string"
 }
 
+function bySelector(){
+
+  var options = [].slice.apply(arguments, [0])
+    .reduce(
+      function(curr, next){
+        if(isStr(next)) curr.push({ selector : next })
+        else curr[curr.length - 1].fn = next
+        return curr
+      }
+    , []
+    )
+  
+  return function(res){
+    var node = this
+      , called = false
+
+    called = options.some(function(option){
+      if(is(node, option.selector)){
+        option.fn.call(node, res)
+        return true
+      }
+    })
+
+    if(!called){
+      res("No matches found")
+    }
+  }
+}
+
 function byOrdered(fns, error){
   
   return function(req, res, response){
@@ -78,35 +107,6 @@ function byOrdered(fns, error){
         }
       , response
       )
-    }
-  }
-}
-
-function bySelector(){
-
-  var options = [].slice.apply(arguments, [0])
-    .reduce(
-      function(curr, next){
-        if(isStr(next)) curr.push({ selector : next })
-        else curr[curr.length - 1].fn = next
-        return curr
-      }
-    , []
-    )
-  
-  return function(res){
-    var node = this
-      , called = false
-
-    called = options.some(function(option){
-      if(is(node, option.selector)){
-        option.fn.call(node, res)
-        return true
-      }
-    })
-
-    if(!called){
-      res("No matches found")
     }
   }
 }
@@ -212,24 +212,22 @@ function newWeb(){
     req.headers || (req.headers = {})
     req.headers.accept || (req.headers.accept = "application/x.nap.view")
 
-    var match = routes.match(req.uri)
-    if(!match) {
-      cb(req.uri + " not found")
-      return;
-    }
-
-    req.params = match.params
-
     response = {
       uri : req.uri
     , method : req.method
-    , status : null
-    , headers : {
-        "Content-type" : "application/x.nap.view"
-      } 
-    , body : null
+    , headers : {} 
     , params : req.params
     }
+
+    var match = routes.match(req.uri)
+
+    if(!match) {
+      response.status = "404 Not Found"
+      cb(response)
+      return
+    }
+
+    req.params = match.params
 
     invoke(this, match.fn, req, respond(cb, response), response)
 
