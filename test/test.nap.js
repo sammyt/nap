@@ -277,14 +277,14 @@ describe("Nap", function(){
             { 
               get : nap.negotiate.accept(
                 { 
-                  json : getDataSpy 
-                , html : getViewSpy 
+                  html : getViewSpy 
+                , json : getDataSpy 
                 }
               ) 
             , send : nap.negotiate.accept(
                 { 
-                  json : sendDataSpy 
-                , html : sendViewSpy 
+                  html : sendViewSpy 
+                , json : sendDataSpy 
                 }
               ) 
             }
