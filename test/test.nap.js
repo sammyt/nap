@@ -65,28 +65,14 @@ describe("Nap", function(){
       var web = nap.web()
         , cb = sinon.spy()
 
-      web.resource("/foo/bar", nap.negotiate.method(
-          {
-            get : function(req, res){
-              console.log("resource scope: ", this)
-              this.status = "oops"
-              res(null, "where am i?")
-            }
-          }
-        )
-      )
-
-      web.resource("/foo/bar2", function(req, res){
-          console.log("resource2 scope: ", this)
-          this.status = "xxxxxxxxxx"
+      web.resource("/foo/bar", function(req, res){
           res(null, "where am i?")
         }
       )
 
       web.req("/foo/bar", cb)
-      web.req("/foo/bar2", cb)
 
-      cb.should.have.been.calledTwice
+      cb.should.have.been.calledOnce
       cb.args[0][0].body.should.equal("where am i?")
       cb.args[0][0].status.should.equal("200 OK")
       cb.args[0][0].method.should.equal("get")
@@ -226,18 +212,17 @@ describe("Nap", function(){
 
         calls.should.eql(["one", "two"])
         cb.should.have.been.calledOnce
-        //console.log(cb.args[0][0])
         cb.args[0][0].status.should.equal("All handlers failed")
       })
-/*      it("should only call handers until one succeeds", function(){
+      it("should only call handers until one succeeds", function(){
         var calls = []
           , cb = sinon.spy()
 
         nap.web().resource(
           "/nothing"
         , nap.negotiate.ordered(
-          [ function(req, res){ calls.push("one"),   res(false, "one") }
-          , function(req, res){ calls.push("two"),   res(false, "two") }
+          [ function(req, res){ calls.push("one"),   res(true, "one") }
+          , function(req, res){ calls.push("two"),   res(true, "two") }
           , function(req, res){ calls.push("three"), res(false, "three") }  
           , function(req, res){ calls.push("four"),  res(false, "four") }  
           ]
@@ -247,8 +232,7 @@ describe("Nap", function(){
 
         calls.should.eql(["one", "two", "three"])
         cb.should.have.been.calledOnce
-        cb.should.have.been.calledWith(false)
-      })*/
+      })
     })
     describe("negotiate.method", function(){
       it("should only accept methods where handlers are provided", function(){
@@ -319,36 +303,90 @@ describe("Nap", function(){
       })
     })
   })
-  describe("negotiate.accept.method", function(){
-    it("should respond with a response object", function(){
+  describe("nap.error", function(){
+    it("should respond with a 404 if no resource is found", function() {
       var web = nap.web()
-        , into = nap.into
+        , cb = sinon.spy()
+
+      web.req("/sausage", cb)
+      cb.should.have.been.calledOnce
+      cb.args[0][0].status.should.equal("404 Not Found")
+    })
+    it("should respond with a 405 if no supported method is found", function() {
+      var web = nap.web()
+        , cb = sinon.spy()
+
       web.resource(
-        "/sausage/{id}" 
+        "/sausage" 
       , nap.negotiate.method(
-          {
+          { 
+            get : function(req, res) {} 
+          }
+        )
+      )
+
+      web.req({uri: "/sausage", method:"send"}, cb)
+      cb.should.have.been.calledOnce
+      cb.args[0][0].status.should.equal("405 Method Not Allowed")
+    })
+    it("should respond with a 415 if no supported media type is found", function() {
+      var web = nap.web()
+        , cb = sinon.spy()
+
+      web.resource(
+        "/sausage" 
+      , nap.negotiate.method(
+          { 
             get : nap.negotiate.accept(
-              {
-                "application/x.nap.view" : function(req, res) {
-                  res(
-                    null
-                  , nap.negotiate.selector(
-                      "div" , function(params) {console.log("called on div with: ", params)}
-                    , "body" , function(params) {console.log("called on body with: ", params)}
-                    , "*" , function(params) {console.log("called on * with: ", params)}
-                    )
-                  )
-                }
-              , "application/json" : function(req, res) {
-                  res(null, "json")
-                }
+              { 
+                json : function(req, res) {} 
               }
             )
           }
         )
       )
-      web.req({uri:"/sausage/123", method:"get", headers:{accept:"application/x.nap.view"}}, into(document.querySelectorAll("div")[0]))
+
+      web.req("/sausage", cb)
+      cb.should.have.been.calledOnce
+      cb.args[0][0].status.should.equal("415 Unsupported Media Type")
     })
+  })
+  describe("nap.into", function(){
+    var node
+    beforeEach(function(){
+      node = d3.select("body")
+        .append("div")
+        .classed("nap-tests", true)
+    })
+    afterEach(function(){
+      node.remove()
+    })
+    it("should invoke the reponse body on a dom node", function() {
+      var view = nap.into(node)
+        , cb = sinon.spy()
+        , res = {
+            status : "200 OK"
+          , body : cb
+          }
+
+      view(res)
+
+      cb.should.have.been.calledOnce
+      cb.should.have.been.calledOn(node)
+    })
+    it("should do nothing for non 200 status codes", function() {
+      var view = nap.into(node)
+        , cb = sinon.spy()
+        , res = {
+            status : "404 Not found"
+          , body : cb
+          }
+
+      view(res)
+
+      cb.should.not.have.been.calledOnce
+    })
+
   })
 })
 
