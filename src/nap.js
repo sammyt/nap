@@ -8,8 +8,8 @@ nap.web = newWeb
 nap.negotiate = { 
   selector : bySelector
 , ordered  : byOrdered
-, method   : byComparator(matchMethod, "405 Method Not Allowed")
-, accept   : byComparator(matchAcceptType, "415 Unsupported Media Type", setContentType)
+, method   : byNegotiater(matchMethod, "405 Method Not Allowed")
+, accept   : byNegotiater(matchAcceptType, "415 Unsupported Media Type", setContentType)
 }
 nap.into = into
 
@@ -94,8 +94,9 @@ function byOrdered(fns, error){
         return
       }
 
-      fn.call(
+      invoke(
         scope
+      , fn
       , req
       , function(err, data){
           if(err){
@@ -121,7 +122,7 @@ function setContentType(res, value) {
   res.headers["Content-type"] = value
 }
 
-function byComparator(matches, error, update){
+function byNegotiater(matches, error, update){
   return function(map){
 
     var order = Object.keys(map)
@@ -131,10 +132,10 @@ function byComparator(matches, error, update){
 
     function handler(req, res){
       var fn = byOrdered.call(null, order, error)
-      fn.call(this, req, res)
+      invoke(this, fn, req, res)
     }
     
-    handler.scoped = true
+    handler.scoped = true // limit response scope access to internal functions only
     return handler
   }
 }
@@ -143,15 +144,19 @@ function handleKey(key, fn, matches, update){
   return function(req, res){
     if(matches(req, key)){
       update && update(this, key)
-      invoke(this, fn, req, res)
+      invokeHandler(this, fn, req, res)
       return
     }
     res("No Match")
   }
 }
 
-function invoke(scope, fn, req, cb){
+function invokeHandler(scope, fn, req, cb){
   scope = fn.scoped ? scope : null
+  invoke(scope, fn, req, cb)
+}
+
+function invoke(scope, fn, req, cb){
   fn.call(scope, req, cb)
 }
 
@@ -230,7 +235,7 @@ function newWeb(){
 
     req.params = res.params = match.params
 
-    invoke(res, match.fn, req, response(cb, res))
+    invokeHandler(res, match.fn, req, response(cb, res))
 
     return web
   }
