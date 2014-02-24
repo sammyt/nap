@@ -16,8 +16,8 @@ nap.web = newWeb
 nap.negotiate = { 
   selector : bySelector
 , ordered  : byOrdered
-, method   : byNegotiater(matchMethod, noop, handleError(405))
-, accept   : byNegotiater(matchAcceptType, setContentType, handleError(415))
+, method   : byNegotiation(matchMethod, noop, setStatusCode(405))
+, accept   : byNegotiation(matchAcceptType, setContentType, setStatusCode(415))
 }
 nap.into = into
 
@@ -80,13 +80,13 @@ function bySelector(){
   }
 }
 
-function byOrdered(fns, handleError){
+function byOrdered(fns, setErrorStatus){
   
   return function(req, res){
     var response = this
 
     if(!fns.length){
-      handleError(response)
+      setErrorStatus(response)
       res("No handers specified")
       return
     }
@@ -96,7 +96,7 @@ function byOrdered(fns, handleError){
     function next(fns){
       var fn = fns.shift()
       if(!fn){
-        handleError(response)
+        setErrorStatus(response)
         res("All handlers failed")
         return
       }
@@ -125,17 +125,17 @@ function matchAcceptType(req, acceptType) {
   return req.headers.accept == acceptType
 }
 
-function setContentType(res, value) {
-  res.headers.contentType = value
+function setContentType(response, value) {
+  response.headers.contentType = value
 }
 
-function handleError(statusCode) {
-  return function(res) {
-    !res.statusCode && (res.statusCode = statusCode)
+function setStatusCode(statusCode) {
+  return function(response) {
+    !response.statusCode && (response.statusCode = statusCode)
   }
 }
 
-function byNegotiater(comparator, action, error){
+function byNegotiation(comparator, action, error){
   return function(map){
 
     var order = Object.keys(map)
@@ -156,8 +156,9 @@ function byNegotiater(comparator, action, error){
 function handleKey(key, fn, compare, update){
   return function(req, res){
     if(compare(req, key)){
-      update(this, key)
-      invokeHandler(this, fn, req, res)
+      var response = this
+      update(response, key)
+      invokeHandler(response, fn, req, res)
       return
     }
     res("No Match")
