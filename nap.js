@@ -28,16 +28,16 @@ nap = function environment(nap_window) {
       }), called || cb("No matching selector");
     };
   }
-  function byOrdered(fns, handleError) {
+  function byOrdered(fns, setErrorStatus) {
     return function(req, res) {
       function next(fns) {
         var fn = fns.shift();
         return fn ? void invoke(response, fn, req, function(err, data) {
           err ? next(fns) : res(err, data);
-        }) : (handleError(response), void res("All handlers failed"));
+        }) : (setErrorStatus(response), void res("All handlers failed"));
       }
       var response = this;
-      return fns.length ? void next([].concat(fns)) : (handleError(response), void res("No handers specified"));
+      return fns.length ? void next([].concat(fns)) : (setErrorStatus(response), void res("No handers specified"));
     };
   }
   function matchMethod(req, method) {
@@ -46,15 +46,15 @@ nap = function environment(nap_window) {
   function matchAcceptType(req, acceptType) {
     return req.headers.accept == acceptType;
   }
-  function setContentType(res, value) {
-    res.headers.contentType = value;
+  function setContentType(response, value) {
+    response.headers.contentType = value;
   }
-  function handleError(statusCode) {
-    return function(res) {
-      !res.statusCode && (res.statusCode = statusCode);
+  function setStatusCode(statusCode) {
+    return function(response) {
+      !response.statusCode && (response.statusCode = statusCode);
     };
   }
-  function byNegotiater(comparator, action, error) {
+  function byNegotiation(comparator, action, error) {
     return function(map) {
       function handler(req, res) {
         var fn = byOrdered.call(null, order, error);
@@ -68,7 +68,11 @@ nap = function environment(nap_window) {
   }
   function handleKey(key, fn, compare, update) {
     return function(req, res) {
-      return compare(req, key) ? (update(this, key), void invokeHandler(this, fn, req, res)) : void res("No Match");
+      if (compare(req, key)) {
+        var response = this;
+        return update(response, key), void invokeHandler(response, fn, req, res);
+      }
+      res("No Match");
     };
   }
   function invokeHandler(scope, fn, req, cb) {
@@ -79,8 +83,7 @@ nap = function environment(nap_window) {
   }
   function response(cb, res) {
     return function(err, data) {
-      res.body = data, !res.statusCode && (res.statusCode = 200), !res.status && (res.status = "OK"), 
-      cb(err, res);
+      res.body = data, !res.statusCode && (res.statusCode = 200), cb(err, res);
     };
   }
   function newWeb() {
@@ -113,7 +116,7 @@ nap = function environment(nap_window) {
       };
       var match = routes.match(req.uri);
       return match ? (req.params = res.params = match.params, invokeHandler(res, match.fn, req, response(cb, res)), 
-      web) : (res.status = "Not Found", res.statusCode = 404, void cb(null, res));
+      web) : (res.statusCode = 404, void cb(null, res));
     }, web.uri = function(name, params) {
       var meta = resources[name];
       if (!meta) throw new Error(name + " not found");
@@ -129,8 +132,8 @@ nap = function environment(nap_window) {
   nap.web = newWeb, nap.negotiate = {
     selector: bySelector,
     ordered: byOrdered,
-    method: byNegotiater(matchMethod, noop, handleError(405)),
-    accept: byNegotiater(matchAcceptType, setContentType, handleError(415))
+    method: byNegotiation(matchMethod, noop, setStatusCode(405)),
+    accept: byNegotiation(matchAcceptType, setContentType, setStatusCode(415))
   }, nap.into = into;
   var root = nap_document.documentElement, matchesSelector = root.matchesSelector || root.webkitMatchesSelector || root.mozMatchesSelector || root.msMatchesSelector || root.oMatchesSelector;
   return nap;

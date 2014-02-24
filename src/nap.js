@@ -178,7 +178,6 @@ function response(cb, res) {
   return function(err, data) {
     res.body = data
     !res.statusCode && (res.statusCode = 200)
-    !res.status && (res.status = "OK")
     cb(err, res)
   }
 }
@@ -242,7 +241,6 @@ function newWeb(){
     var match = routes.match(req.uri)
 
     if(!match) {
-      res.status = "Not Found"
       res.statusCode = 404
       cb(null, res)
       return

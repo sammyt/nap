@@ -9,16 +9,20 @@
   <script type="text/javascript">
     function init(){
       
-      function bar(req){
+      function bar(req, res){
         console.log("called", req.uri, req.params)
       }
 
-      function foo(req){
+      function foo(req, res){
         console.log("called", req.uri, req.params)
       }
 
-      function speak(req){
-        d3.select(this).text(req.params.name)
+      function speak(req, res){
+        res(
+          null
+        , function(node) {
+          d3.select(node).text(req.params.name)
+        })
       }
 
       function peas(req, res){
@@ -46,11 +50,18 @@
           ]
         )
         .enter().append("li")
-        .select(web.req)
+        .each(function(d, i) {
+          var node = this
+          web.req(d, function(err, res) {
+            var view = res.body
+            console.log(res.status)
+            view(node)
+          })
+        })
 
       // get some data from a request
       web.req("/peas", function(err, res){
-        console.log(res)
+        console.log(res.body)
       })
     }
   </script>
