@@ -73,9 +73,9 @@ describe("Nap", function(){
       web.req("/foo/bar", cb)
 
       cb.should.have.been.calledOnce
-      cb.args[0][0].body.should.equal("where am i?")
-      cb.args[0][0].status.should.equal("200 OK")
-      cb.args[0][0].method.should.equal("get")
+      cb.args[0][1].body.should.equal("where am i?")
+      cb.args[0][1].statusCode.should.equal(200)
+      cb.args[0][1].method.should.equal("get")
     })
     it("be default requests have method of 'get'", function(){
       var web = nap.web()
@@ -131,21 +131,28 @@ describe("Nap", function(){
         var one = node.append("span").classed("one", true).node()
           , o = sinon.spy()
           , t = sinon.spy()
+          , cb = sinon.spy()
 
         var handler = nap.negotiate.selector(
           ".one", o
         , ".two" , t
         )
 
-        handler.bind(one)()
+        handler(one, cb)
 
         o.should.have.been.calledOnce
+        o.should.have.been.calledWith(one)
         t.should.not.have.been.called
+
+        cb.should.have.been.calledOnce
+        cb.should.have.been.calledWith(null, ".one")
+
       })
       it("should assess handlers in order (top to bottom)", function(){
         var one = node.append("span").classed("one", true).node()
           , o = sinon.spy()
           , t = sinon.spy()
+          , cb = sinon.spy()
 
         var handler = nap.negotiate.selector(
           ".two", t
@@ -153,10 +160,14 @@ describe("Nap", function(){
         , "*" , t
         )
 
-        handler.bind(one)()
+        handler(one, cb)
 
         o.should.have.been.calledOnce
+        o.should.have.been.calledWith(one)
         t.should.not.have.been.called
+
+        cb.should.have.been.calledOnce
+        cb.should.have.been.calledWith(null, ".one")
       })
       it("should fail when no selector matches", function(){
         var three = node.append("span").classed("three", true).node()
@@ -169,63 +180,69 @@ describe("Nap", function(){
         , ".one", o
         )
 
-        handler.bind(three)(cb)
+        handler(three, cb)
 
         o.should.not.have.been.called
         t.should.not.have.been.called
 
         cb.should.have.been.calledOnce
-        cb.should.have.been.calledWith("No matches found")
+        cb.should.have.been.calledWith("No matching selector")
       })
     })
     describe("ordered", function(){
       it("should try handlers in order they are added", function(){
         var calls = []
+          , error = sinon.spy()
 
         nap.web().resource(
           "/nothing"
         , nap.negotiate.ordered(
-          [ function(req, res){ calls.push("one"), res(true) }
-          , function(req, res){ calls.push("two"), res(true) }  
-          ]
+            [ function(req, res){ calls.push("one"), res(true) }
+            , function(req, res){ calls.push("two"), res(true) }  
+            ]
+          , error
           )
         )
-        .req("/nothing", function(res) {
-          //console.log(res)
+        .req("/nothing", function(err, res) {
+          //console.log(err, res)
         })
 
         calls.should.eql(["one", "two"])
       })
       it("should fail when all handers fail", function(){
         var calls = []
-          , cb = sinon.spy()
-
-        nap.web().resource(
-          "/nothing"
-        , nap.negotiate.ordered(
-          [ function(req, res){ calls.push("one"), res(true, "one") }
-          , function(req, res){ calls.push("two"), res(true, "two") }  
-          ]
+          , req = sinon.spy()
+          , res = sinon.spy()
+          , error = sinon.spy()
+          , response = {}
+          , ordered = nap.negotiate.ordered(
+            [ function(req, res){ calls.push("one"), res(true, "one") }
+            , function(req, res){ calls.push("two"), res(true, "two") }  
+            ]
+          , error
           )
-        )
-        .req("/nothing", cb)
+
+        ordered.call(response, req, res)
 
         calls.should.eql(["one", "two"])
-        cb.should.have.been.calledOnce
-        cb.args[0][0].status.should.equal("All handlers failed")
+        res.should.have.been.calledOnce
+        res.args[0][0].should.equal("All handlers failed")
+        error.should.have.been.calledOnce
       })
       it("should only call handers until one succeeds", function(){
         var calls = []
           , cb = sinon.spy()
+          , error = sinon.spy()
 
         nap.web().resource(
           "/nothing"
         , nap.negotiate.ordered(
-          [ function(req, res){ calls.push("one"),   res(true, "one") }
-          , function(req, res){ calls.push("two"),   res(true, "two") }
-          , function(req, res){ calls.push("three"), res(false, "three") }  
-          , function(req, res){ calls.push("four"),  res(false, "four") }  
-          ]
+            [ function(req, res){ calls.push("one"),   res(true, "one") }
+            , function(req, res){ calls.push("two"),   res(true, "two") }
+            , function(req, res){ calls.push("three"), res(false, "three") }  
+            , function(req, res){ calls.push("four"),  res(false, "four") }  
+            ]
+          , error
           )
         )
         .req("/nothing", cb)
@@ -310,7 +327,7 @@ describe("Nap", function(){
 
       web.req("/sausage", cb)
       cb.should.have.been.calledOnce
-      cb.args[0][0].status.should.equal("404 Not Found")
+      cb.args[0][1].statusCode.should.equal(404)
     })
     it("should respond with a 405 if no supported method is found", function() {
       var web = nap.web()
@@ -327,7 +344,7 @@ describe("Nap", function(){
 
       web.req({uri: "/sausage", method:"send"}, cb)
       cb.should.have.been.calledOnce
-      cb.args[0][0].status.should.equal("405 Method Not Allowed")
+      cb.args[0][1].statusCode.should.equal(405)
     })
     it("should respond with a 415 if no supported media type is found", function() {
       var web = nap.web()
@@ -348,7 +365,7 @@ describe("Nap", function(){
 
       web.req("/sausage", cb)
       cb.should.have.been.calledOnce
-      cb.args[0][0].status.should.equal("415 Unsupported Media Type")
+      cb.args[0][1].statusCode.should.equal(415)
     })
   })
   describe("nap.into", function(){
@@ -365,24 +382,46 @@ describe("Nap", function(){
       var view = nap.into(node)
         , cb = sinon.spy()
         , res = {
-            status : "200 OK"
+            headers : {
+              contentType : "application/x.nap.view"
+            }
+          , statusCode : 200
           , body : cb
           }
 
-      view(res)
+      view(null, res)
 
       cb.should.have.been.calledOnce
-      cb.should.have.been.calledOn(node)
+      cb.should.have.been.calledWith(node)
     })
     it("should do nothing for non 200 status codes", function() {
       var view = nap.into(node)
         , cb = sinon.spy()
         , res = {
-            status : "404 Not found"
+            headers : {
+              contentType : "application/x.nap.view"
+            }
+          , statusCode : 404
           , body : cb
           }
 
-      view(res)
+      view(null, res)
+
+      cb.should.not.have.been.called
+    })
+
+    it("should do nothing if the content type is not a nap view", function() {
+      var view = nap.into(node)
+        , cb = sinon.spy()
+        , res = {
+            headers : {
+              contentType : "application/json"
+            }
+          , statusCode : 200
+          , body : cb
+          }
+
+      view(null, res)
 
       cb.should.not.have.been.calledOnce
     })

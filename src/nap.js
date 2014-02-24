@@ -1,3 +1,11 @@
+// TODO
+// status / statusCode
+// err, data signature for callbacks
+// call res with node
+// middleware 
+// exceptions vs 400 responses
+
+
 nap = (function environment(nap_window){
 
 var nap = { environment: environment }
@@ -8,19 +16,18 @@ nap.web = newWeb
 nap.negotiate = { 
   selector : bySelector
 , ordered  : byOrdered
-, method   : byNegotiater(matchMethod, "405 Method Not Allowed")
-, accept   : byNegotiater(matchAcceptType, "415 Unsupported Media Type", setContentType)
+, method   : byNegotiater(matchMethod, noop, handleError(405))
+, accept   : byNegotiater(matchAcceptType, setContentType, handleError(415))
 }
 nap.into = into
 
 function into(node) {
-  return function(res) {
-    if(res.status != "200 OK") {
-      console.log(res.status)
+  return function(err, res) {
+    if(res.statusCode != 200 || res.headers.contentType != "application/x.nap.view") {
       return
     }
     var view = res.body
-    view.call(node, res.params)
+    view(node)
   }
 }
 
@@ -57,30 +64,30 @@ function bySelector(){
     , []
     )
   
-  return function(res){
-    var node = this
-      , called = false
+  return function(node, cb){
+    var called = false
+      , cb = cb || noop
 
     called = options.some(function(option){
       if(is(node, option.selector)){
-        option.fn.call(node, res)
+        option.fn.call(null, node)
+        cb(null, option.selector)
         return true
       }
     })
 
-    if(!called){
-      res("No matches found")
-    }
+    if(!called) cb("No matching selector")
   }
 }
 
-function byOrdered(fns, error){
+function byOrdered(fns, handleError){
   
   return function(req, res){
-    var scope = this
+    var response = this
+
     if(!fns.length){
-      !scope.status && (scope.status = error)
-      res(error || "No handers specified")
+      handleError(response)
+      res("No handers specified")
       return
     }
 
@@ -89,13 +96,13 @@ function byOrdered(fns, error){
     function next(fns){
       var fn = fns.shift()
       if(!fn){
-        !scope.status && (scope.status = error)
-        res(error || "All handlers failed")
+        handleError(response)
+        res("All handlers failed")
         return
       }
 
       invoke(
-        scope
+        response
       , fn
       , req
       , function(err, data){
@@ -119,15 +126,21 @@ function matchAcceptType(req, acceptType) {
 }
 
 function setContentType(res, value) {
-  res.headers["Content-type"] = value
+  res.headers.contentType = value
 }
 
-function byNegotiater(matches, error, update){
+function handleError(statusCode) {
+  return function(res) {
+    !res.statusCode && (res.statusCode = statusCode)
+  }
+}
+
+function byNegotiater(comparator, action, error){
   return function(map){
 
     var order = Object.keys(map)
       .map(function(key){
-        return handleKey(key, map[key], matches, update)
+        return handleKey(key, map[key], comparator, action)
       })
 
     function handler(req, res){
@@ -140,10 +153,10 @@ function byNegotiater(matches, error, update){
   }
 }
 
-function handleKey(key, fn, matches, update){
+function handleKey(key, fn, compare, update){
   return function(req, res){
-    if(matches(req, key)){
-      update && update(this, key)
+    if(compare(req, key)){
+      update(this, key)
       invokeHandler(this, fn, req, res)
       return
     }
@@ -163,8 +176,9 @@ function invoke(scope, fn, req, cb){
 function response(cb, res) {
   return function(err, data) {
     res.body = data
-    !res.status && (res.status = err || "200 OK")
-    cb.call(null, res)
+    !res.statusCode && (res.statusCode = 200)
+    !res.status && (res.status = "OK")
+    cb(err, res)
   }
 }
 
@@ -220,16 +234,16 @@ function newWeb(){
     req.headers.accept || (req.headers.accept = "application/x.nap.view")
 
     res = {
-      uri : req.uri
-    , method : req.method
+      method : req.method
     , headers : {} 
     }
 
     var match = routes.match(req.uri)
 
     if(!match) {
-      res.status = "404 Not Found"
-      cb(res)
+      res.status = "Not Found"
+      res.statusCode = 404
+      cb(null, res)
       return
     }
 
