@@ -9,20 +9,25 @@
   <script type="text/javascript">
     function init(){
       
-      function whisper(req){
-        d3.select(this).text(req.params.name)
-      }
-
-      function shout(req){
-        d3.select(this).append("h1").text(req.params.name)
-      }
-
       // speak has two representations chosen
       // via a css selector matched on the context
-      var speak = nap.negotiate.selector(
-        ".big" , shout
-      , ".little", whisper
-      )
+      var speak = function(req, res) {
+
+        function whisper(node){
+          d3.select(node).text(req.params.name)
+        }
+
+        function shout(node){
+          d3.select(node).append("h1").text(req.params.name)
+        }
+
+        var view = nap.negotiate.selector(
+          ".big" , shout
+        , ".little", whisper
+        )
+
+        res(false, view)
+      }
 
       // add speak as a resource
       var web = nap.web()
@@ -33,8 +38,13 @@
         , little = d3.select(".little").node()
 
       // view the two representations
-      web.req.bind(big)("/speak/sammy")
-      web.req.bind(little)("/speak/sammy")
+      web.req("/speak/sammy", function(err, res) {
+        res.body(big)
+      })
+
+      web.req("/speak/sammy", function(err, res) {
+        res.body(little)
+      })
     }
   </script>
   <title>Negotiate</title>
