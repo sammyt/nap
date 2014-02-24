@@ -11,22 +11,20 @@
       
       function bar(req, res){
         console.log("called", req.uri, req.params)
+        res(false, "bar called")
       }
 
       function foo(req, res){
         console.log("called", req.uri, req.params)
+        res(false, "foo called")
       }
 
       function speak(req, res){
         res(
-          null
+          false
         , function(node) {
           d3.select(node).text(req.params.name)
         })
-      }
-
-      function peas(req, res){
-        res(false, ["a", "b", "c"])
       }
 
       // setup this web
@@ -34,11 +32,18 @@
         .resource("/foo/bar", bar)
         .resource("/foo/{thing}/wibble", foo)
         .resource("/speak/{name}", speak)
-        .resource("/peas", peas)
 
       // make some requests
-      web.req("/foo/bar")
-      web.req("/foo/chips/wibble")
+      web.req("/foo/bar", function(err, res) {
+        console.log(res.body)
+      })
+
+      web.req("/foo/chips/wibble", function(err, res) {
+        console.log(res.body)
+      })
+
+      // Use the view client
+      var into = nap.into
 
       // create some views from requests
       d3.select(".message")
@@ -51,18 +56,8 @@
         )
         .enter().append("li")
         .each(function(d, i) {
-          var node = this
-          web.req(d, function(err, res) {
-            var view = res.body
-            console.log(res.status)
-            view(node)
-          })
+          web.req(d, into(this))
         })
-
-      // get some data from a request
-      web.req("/peas", function(err, res){
-        console.log(res.body)
-      })
     }
   </script>
   <title>Basic</title>

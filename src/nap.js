@@ -23,11 +23,11 @@ nap.into = into
 
 function into(node) {
   return function(err, res) {
-    if(res.statusCode != 200 || res.headers.contentType != "application/x.nap.view") {
-      return
-    }
-    var view = res.body
-    view(node)
+    if(res.statusCode != 200) return
+    if(res.headers.contentType && res.headers.contentType != "application/x.nap.view") return
+    if(!isFn(res.body)) return
+    
+    res.body(node)
   }
 }
 
