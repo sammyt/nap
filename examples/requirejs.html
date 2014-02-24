@@ -29,23 +29,35 @@
       , "d3"
       ]
     , function(nap, d3) {
-        function speak(req){
-          d3.select(this).text(req.params.name)
-        }
 
-        var web = nap.web()
-          .resource("/speak/{name}", speak)
+      function speak(req, res){
+        res(
+          false
+        , function(node) {
+          d3.select(node).text(req.params.name)
+        })
+      }
 
-        d3.select(".message")
-          .selectAll("li")
-          .data(
-            [ "/speak/sammy"
-            , "/speak/becky"
-            , "/speak/zia"
-            ]
-          )
-          .enter().append("li")
-          .select(web.req)
+      // setup this web
+      var web = nap.web()
+        .resource("/speak/{name}", speak)
+
+      // Use the view client
+      var into = nap.into
+
+      // create some views from requests
+      d3.select(".message")
+        .selectAll("li")
+        .data(
+          [ "/speak/sammy"
+          , "/speak/becky"
+          , "/speak/zia"
+          ]
+        )
+        .enter().append("li")
+        .each(function(d, i) {
+          web.req(d, into(this))
+        })
       }
     )
 

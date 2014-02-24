@@ -9,16 +9,19 @@
   <script type="text/javascript">
     function init(){
       
-      function speak(req){
-        d3.select(this).text(req.params.name)
+      function speak(req, res){
+        res(
+          false
+        , function(node) {
+          d3.select(node).text(req.params.name)
+        })
       }
 
-      var web = nap.web()
-        .view(d3.select(".container").node())
-        .resource("/speak/{name}", nap.replies.view(speak))
+      var web = nap.web().resource("/speak/{name}", speak)
+        , node = d3.select(".container").node()
+        , target = nap.into(node)
 
-      
-      web.req("/speak/sammy")
+      web.req("/speak/sammy", target)
 
       d3.select(document)
         .selectAll("a")
@@ -29,6 +32,7 @@
             next
           , function(err, data){
               window.location = "#!" + next
+              web.req(next, target)
             }
           )
         })

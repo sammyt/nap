@@ -1,15 +1,15 @@
 nap = function environment(nap_window) {
   function into(node) {
     return function(err, res) {
-      if (200 == res.statusCode && "application/x.nap.view" == res.headers.contentType) {
-        var view = res.body;
-        view(node);
-      }
+      200 == res.statusCode && (res.headers.contentType && "application/x.nap.view" != res.headers.contentType || isFn(res.body) && res.body(node));
     };
   }
   function noop() {}
   function is(n, s) {
     return matchesSelector.call(n, s);
+  }
+  function isFn(inst) {
+    return "function" == typeof inst;
   }
   function isStr(inst) {
     return "string" == typeof inst;
