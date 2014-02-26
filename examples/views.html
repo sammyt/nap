@@ -13,6 +13,13 @@
 
         function view(node) {
           d3.select(node).text(req.params.name)
+          node.addEventListener("update", onUpdate)
+
+          function onUpdate() {
+            console.log("update called")
+            node.removeEventListener("update")
+          }
+
         }
         
         res(false, view)
@@ -34,6 +41,8 @@
 
       // Use the view client
       var into = nap.into
+      web.req("/speak/sammy", into(bottom))
+      web.req("/speak/sammy", into(bottom))
       web.req("/speak/sammy", into(bottom))
     }
   </script>

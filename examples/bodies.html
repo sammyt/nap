@@ -27,22 +27,16 @@
           res()
         }
 
-        return {
-          view : view
-        , add : add
-        }
+        return nap.negotiate.method(
+          { get: view
+          , send: add 
+          }
+        )
       }
       
       var myTodo = todo()
         , into = nap.into
-        , web = nap.web()
-          .resource("/todos", 
-            nap.negotiate.method(
-              { get: myTodo.view
-              , send: myTodo.add 
-              }
-            )
-          )
+        , web = nap.web().resource("/todos", myTodo)
 
       
       function render(){

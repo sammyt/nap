@@ -15,6 +15,7 @@ var nap = { environment: environment }
 nap.web = newWeb
 nap.negotiate = { 
   selector : bySelector
+, defered  : bySelectorDefered
 , ordered  : byOrdered
 , method   : byNegotiation(matchMethod, noop, setStatusCode(405))
 , accept   : byNegotiation(matchAcceptType, setContentType, setStatusCode(415))
@@ -27,6 +28,7 @@ function into(node) {
     if(res.headers.contentType && res.headers.contentType != "application/x.nap.view") return
     if(!isFn(res.body)) return
     
+    node.dispatchEvent(new Event("update"))
     res.body(node)
   }
 }
@@ -77,6 +79,33 @@ function bySelector(){
     })
 
     if(!called) cb("No matching selector")
+  }
+}
+
+function bySelectorDefered(){
+
+  var options = [].slice.apply(arguments, [0])
+    .reduce(
+      function(curr, next){
+        if(isStr(next)) curr.push({ selector : next })
+        else curr[curr.length - 1].fn = next
+        return curr
+      }
+    , []
+    )
+  
+  return function(node){
+
+    var fn
+
+    options.some(function(option){
+      if(is(node, option.selector)) {
+        fn = option.fn
+        return true
+      }
+    })
+
+    return fn
   }
 }
 

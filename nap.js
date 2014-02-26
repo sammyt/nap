@@ -1,7 +1,8 @@
 nap = function environment(nap_window) {
   function into(node) {
     return function(err, res) {
-      200 == res.statusCode && (res.headers.contentType && "application/x.nap.view" != res.headers.contentType || isFn(res.body) && res.body(node));
+      200 == res.statusCode && (res.headers.contentType && "application/x.nap.view" != res.headers.contentType || isFn(res.body) && (node.dispatchEvent(new Event("update")), 
+      res.body(node)));
     };
   }
   function noop() {}
@@ -26,6 +27,19 @@ nap = function environment(nap_window) {
         return is(node, option.selector) ? (option.fn.call(null, node), cb(null, option.selector), 
         !0) : void 0;
       }), called || cb("No matching selector");
+    };
+  }
+  function bySelectorDefered() {
+    var options = [].slice.apply(arguments, [ 0 ]).reduce(function(curr, next) {
+      return isStr(next) ? curr.push({
+        selector: next
+      }) : curr[curr.length - 1].fn = next, curr;
+    }, []);
+    return function(node) {
+      var fn;
+      return options.some(function(option) {
+        return is(node, option.selector) ? (fn = option.fn, !0) : void 0;
+      }), fn;
     };
   }
   function byOrdered(fns, setErrorStatus) {
@@ -131,6 +145,7 @@ nap = function environment(nap_window) {
   }, nap_window = nap_window || window, nap_document = nap_window.document;
   nap.web = newWeb, nap.negotiate = {
     selector: bySelector,
+    defered: bySelectorDefered,
     ordered: byOrdered,
     method: byNegotiation(matchMethod, noop, setStatusCode(405)),
     accept: byNegotiation(matchAcceptType, setContentType, setStatusCode(415))
