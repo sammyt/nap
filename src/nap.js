@@ -13,12 +13,14 @@ var nap = { environment: environment }
   , nap_document = nap_window.document
   
 nap.web = newWeb
+nap.is = is
 nap.negotiate = { 
   selector : bySelector
-, defered  : bySelectorDefered
-, ordered  : byOrdered
-, method   : byNegotiation(matchMethod, noop, setStatusCode(405))
-, accept   : byNegotiation(matchAcceptType, setContentType, setStatusCode(415))
+, method   : byDispatch(wants(checkMethod, noop), errorsWith(405))
+, accept   : byDispatch(wants(checkAcceptType, setContentType), errorsWith(415))
+}
+nap.responses = {
+  ok : ok
 }
 nap.into = into
 
@@ -28,7 +30,7 @@ function into(node) {
     if(res.headers.contentType && res.headers.contentType != "application/x.nap.view") return
     if(!isFn(res.body)) return
     
-    node.dispatchEvent(new Event("update"))
+   // node.dispatchEvent(new Event("update"))
     res.body(node)
   }
 }
@@ -54,9 +56,74 @@ function isStr(inst){
   return typeof inst === "string"
 }
 
+function toArray(args) {
+  return [].slice.call(args)
+}
+
+function ok(data) {
+  return {
+    body : data
+  , statusCode : 200
+  }
+}
+
+function byDispatch(wants, error) {
+  return function(map) {
+    var args = []
+    Object.keys(map).forEach(function(key) {
+      args.push(wants(key, map[key]))
+    })
+    args.push(error)
+    return dispatch.apply(null, args)
+  }
+}
+
+function wants(comparator, update) {
+  return function(key, fn) {
+    return function(req, res, response) {
+      if(comparator(req, key)) {
+        update(response, key)
+        var args = [req, res].concat(!fn.length ? response : [])
+        fn.apply(null, args)
+        return true
+      }
+    }
+  }
+}
+
+function checkMethod(req, method) {
+  return req.method == method
+}
+
+function checkAcceptType(req, type) {
+  return req.headers.accept == type
+}
+
+function setContentType(res, type) {
+  res.headers.contentType = type
+}
+
+function errorsWith(code) {
+  return function(req, res, response) {
+    !response.statusCode && (response.statusCode = code)
+    res(null, ""+code)
+    return true
+  }
+}
+
+function dispatch() {
+  var fns = toArray(arguments)
+  return function() {
+    var args = toArray(arguments)
+    return fns.some(function(fn) {
+      return fn.apply(null, args)
+    })
+  }
+}
+
 function bySelector(){
 
-  var options = [].slice.apply(arguments, [0])
+  var options = toArray(arguments)
     .reduce(
       function(curr, next){
         if(isStr(next)) curr.push({ selector : next })
@@ -82,130 +149,10 @@ function bySelector(){
   }
 }
 
-function bySelectorDefered(){
 
-  var options = [].slice.apply(arguments, [0])
-    .reduce(
-      function(curr, next){
-        if(isStr(next)) curr.push({ selector : next })
-        else curr[curr.length - 1].fn = next
-        return curr
-      }
-    , []
-    )
-  
-  return function(node){
-
-    var fn
-
-    options.some(function(option){
-      if(is(node, option.selector)) {
-        fn = option.fn
-        return true
-      }
-    })
-
-    return fn
-  }
-}
-
-function byOrdered(fns, setErrorStatus){
-  
-  return function(req, res){
-    var response = this
-
-    if(!fns.length){
-      setErrorStatus(response)
-      res("No handers specified")
-      return
-    }
-
-    next([].concat(fns))
-
-    function next(fns){
-      var fn = fns.shift()
-      if(!fn){
-        setErrorStatus(response)
-        res("All handlers failed")
-        return
-      }
-
-      invoke(
-        response
-      , fn
-      , req
-      , function(err, data){
-          if(err){
-            next(fns)
-          } else {
-            res(err, data)
-          }
-        }
-      )
-    }
-  }
-}
-
-function matchMethod(req, method) {
-  return req.method == method
-}
-
-function matchAcceptType(req, acceptType) {
-  return req.headers.accept == acceptType
-}
-
-function setContentType(response, value) {
-  response.headers.contentType = value
-}
-
-function setStatusCode(statusCode) {
-  return function(response) {
-    !response.statusCode && (response.statusCode = statusCode)
-  }
-}
-
-function byNegotiation(comparator, action, error){
-  return function(map){
-
-    var order = Object.keys(map)
-      .map(function(key){
-        return handleKey(key, map[key], comparator, action)
-      })
-
-    function handler(req, res){
-      var fn = byOrdered.call(null, order, error)
-      invoke(this, fn, req, res)
-    }
-    
-    handler.scoped = true // limit response scope access to internal functions only
-    return handler
-  }
-}
-
-function handleKey(key, fn, compare, update){
-  return function(req, res){
-    if(compare(req, key)){
-      var response = this
-      update(response, key)
-      invokeHandler(response, fn, req, res)
-      return
-    }
-    res("No Match")
-  }
-}
-
-function invokeHandler(scope, fn, req, cb){
-  scope = fn.scoped ? scope : null
-  invoke(scope, fn, req, cb)
-}
-
-function invoke(scope, fn, req, cb){
-  fn.call(scope, req, cb)
-}
-
-function response(cb, res) {
+function respond(cb, res) {
   return function(err, data) {
-    res.body = data
+    data && (res.body = data)
     !res.statusCode && (res.statusCode = 200)
     cb(err, res)
   }
@@ -275,9 +222,9 @@ function newWeb(){
       return
     }
 
-    req.params = res.params = match.params
+    req.params = match.params
 
-    invokeHandler(res, match.fn, req, response(cb, res))
+    match.fn.call(null, req, respond(cb, res), res)
 
     return web
   }

@@ -1,4 +1,5 @@
 describe("Nap", function(){
+
 	describe("nap.web", function(){
     it("should be able to create web instances", function(){
       var w1 = nap.web()
@@ -8,6 +9,14 @@ describe("Nap", function(){
       expect(w2).to.include.keys("resource", "req")
 
       w1.should.not.equal(w2)
+    })
+  })
+  describe("nap responses", function(){
+    it("ok should create a 200 response", function(){
+      nap.responses.ok("hello").should.deep.equal({
+        body: "hello"
+      , statusCode : 200
+      })
     })
   })
   describe("web.resource", function(){
@@ -190,7 +199,7 @@ describe("Nap", function(){
       })
     })
     describe("ordered", function(){
-      it("should try handlers in order they are added", function(){
+/*      it("should try handlers in order they are added", function(){
         var calls = []
           , error = sinon.spy()
 
@@ -208,13 +217,12 @@ describe("Nap", function(){
         })
 
         calls.should.eql(["one", "two"])
-      })
-      it("should fail when all handers fail", function(){
+      })*/
+/*      it("should fail when all handers fail", function(){
         var calls = []
           , req = sinon.spy()
           , res = sinon.spy()
           , error = sinon.spy()
-          , response = {}
           , ordered = nap.negotiate.ordered(
             [ function(req, res){ calls.push("one"), res(true, "one") }
             , function(req, res){ calls.push("two"), res(true, "two") }  
@@ -222,14 +230,14 @@ describe("Nap", function(){
           , error
           )
 
-        ordered.call(response, req, res)
+        ordered.call(null, req, res)
 
         calls.should.eql(["one", "two"])
         res.should.have.been.calledOnce
         res.args[0][0].should.equal("All handlers failed")
         error.should.have.been.calledOnce
-      })
-      it("should only call handers until one succeeds", function(){
+      })*/
+/*      it("should only call handers until one succeeds", function(){
         var calls = []
           , cb = sinon.spy()
           , error = sinon.spy()
@@ -249,7 +257,7 @@ describe("Nap", function(){
 
         calls.should.eql(["one", "two", "three"])
         cb.should.have.been.calledOnce
-      })
+      })*/
     })
     describe("negotiate.method", function(){
       it("should only accept methods where handlers are provided", function(){
@@ -343,6 +351,7 @@ describe("Nap", function(){
       )
 
       web.req({uri: "/sausage", method:"send"}, cb)
+      console.log(cb.args[0])
       cb.should.have.been.calledOnce
       cb.args[0][1].statusCode.should.equal(405)
     })
@@ -356,13 +365,12 @@ describe("Nap", function(){
           { 
             get : nap.negotiate.accept(
               { 
-                json : function(req, res) {} 
+                "json" : function(req,res) { res(null, "hello") } 
               }
             )
           }
         )
       )
-
       web.req("/sausage", cb)
       cb.should.have.been.calledOnce
       cb.args[0][1].statusCode.should.equal(415)
