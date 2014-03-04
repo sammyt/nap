@@ -16,11 +16,12 @@ nap.web = newWeb
 nap.is = is
 nap.negotiate = { 
   selector : bySelector
-, method   : byDispatch(wants(checkMethod, noop), errorsWith(405))
+, method   : byDispatch(wants(checkMethod, setMethod), errorsWith(405))
 , accept   : byDispatch(wants(checkAcceptType, setContentType), errorsWith(415))
 }
 nap.responses = {
   ok : ok
+, error : error
 }
 nap.into = into
 
@@ -64,6 +65,14 @@ function ok(data) {
   return {
     body : data
   , statusCode : 200
+  , headers : {}
+  }
+}
+
+function error(code) {
+  return {
+    statusCode : code
+  , headers : {}
   }
 }
 
@@ -78,13 +87,11 @@ function byDispatch(wants, error) {
   }
 }
 
-function wants(comparator, update) {
+function wants(comparator, respond) {
   return function(key, fn) {
-    return function(req, res, response) {
+    return function(req, res) {
       if(comparator(req, key)) {
-        update(response, key)
-        var args = [req, res].concat(!fn.length ? response : [])
-        fn.apply(null, args)
+        fn.call(null, req, respond(key, res))
         return true
       }
     }
@@ -99,14 +106,23 @@ function checkAcceptType(req, type) {
   return req.headers.accept == type
 }
 
-function setContentType(res, type) {
-  res.headers.contentType = type
+function setContentType(type, res) {
+  return function(err, data) {
+    data.headers.contentType = type
+    res(err, data)
+  }
+}
+
+function setMethod(type, res) {
+  return function(err, data) {
+    data.method = type
+    res(err, data)
+  }
 }
 
 function errorsWith(code) {
-  return function(req, res, response) {
-    !response.statusCode && (response.statusCode = code)
-    res(null, ""+code)
+  return function(req, res) {
+    res(null, error(code))
     return true
   }
 }
@@ -146,15 +162,6 @@ function bySelector(){
     })
 
     if(!called) cb("No matching selector")
-  }
-}
-
-
-function respond(cb, res) {
-  return function(err, data) {
-    data && (res.body = data)
-    !res.statusCode && (res.statusCode = 200)
-    cb(err, res)
   }
 }
 
@@ -209,22 +216,15 @@ function newWeb(){
     req.headers || (req.headers = {})
     req.headers.accept || (req.headers.accept = "application/x.nap.view")
 
-    res = {
-      method : req.method
-    , headers : {} 
-    }
-
     var match = routes.match(req.uri)
 
     if(!match) {
-      res.statusCode = 404
-      cb(null, res)
+      cb(null, error(404))
       return
     }
 
     req.params = match.params
-
-    match.fn.call(null, req, respond(cb, res), res)
+    match.fn.call(null, req, cb)
 
     return web
   }

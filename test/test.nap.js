@@ -16,6 +16,7 @@ describe("Nap", function(){
       nap.responses.ok("hello").should.deep.equal({
         body: "hello"
       , statusCode : 200
+      , headers : {}
       })
     })
   })
@@ -75,16 +76,17 @@ describe("Nap", function(){
         , cb = sinon.spy()
 
       web.resource("/foo/bar", function(req, res){
-          res(null, "where am i?")
+          res(null, nap.responses.ok("where am i?"))
         }
       )
 
       web.req("/foo/bar", cb)
 
       cb.should.have.been.calledOnce
+
+      console.log("cb", cb.args[0])
       cb.args[0][1].body.should.equal("where am i?")
       cb.args[0][1].statusCode.should.equal(200)
-      cb.args[0][1].method.should.equal("get")
     })
     it("be default requests have method of 'get'", function(){
       var web = nap.web()
@@ -198,8 +200,8 @@ describe("Nap", function(){
         cb.should.have.been.calledWith("No matching selector")
       })
     })
-    describe("ordered", function(){
-/*      it("should try handlers in order they are added", function(){
+   /* describe("ordered", function(){
+      it("should try handlers in order they are added", function(){
         var calls = []
           , error = sinon.spy()
 
@@ -217,8 +219,8 @@ describe("Nap", function(){
         })
 
         calls.should.eql(["one", "two"])
-      })*/
-/*      it("should fail when all handers fail", function(){
+      })
+      it("should fail when all handers fail", function(){
         var calls = []
           , req = sinon.spy()
           , res = sinon.spy()
@@ -236,8 +238,8 @@ describe("Nap", function(){
         res.should.have.been.calledOnce
         res.args[0][0].should.equal("All handlers failed")
         error.should.have.been.calledOnce
-      })*/
-/*      it("should only call handers until one succeeds", function(){
+      })
+      it("should only call handers until one succeeds", function(){
         var calls = []
           , cb = sinon.spy()
           , error = sinon.spy()
@@ -257,8 +259,8 @@ describe("Nap", function(){
 
         calls.should.eql(["one", "two", "three"])
         cb.should.have.been.calledOnce
-      })*/
-    })
+      })
+    })*/
     describe("negotiate.method", function(){
       it("should only accept methods where handlers are provided", function(){
         var web = nap.web()
@@ -365,7 +367,7 @@ describe("Nap", function(){
           { 
             get : nap.negotiate.accept(
               { 
-                "json" : function(req,res) { res(null, "hello") } 
+                "json" : function(req,res) { res(null, nap.responses.ok("hello")) } 
               }
             )
           }
