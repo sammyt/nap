@@ -120,12 +120,30 @@ describe("Nap", function(){
 
       web.uri("demo").should.equal("/my-demo")
     })
-    it("should generate a uri with params", function(){
+    it("should generate a uri based on a resource path", function(){
+      var web = nap.web()
+        .resource("demo", "/my-demo", function(){})
+
+      web.uri("/my-demo").should.equal("/my-demo")
+    })
+    it("should generate a uri with params from a resource name", function(){
       var web = nap.web()
         .resource("demo", "/my-demo/{id}", function(){})
 
       web.uri("demo", { id : "foo" }).should.equal("/my-demo/foo")
     })  
+    it("should generate a uri with params from a resource path", function(){
+      var web = nap.web()
+        .resource("demo", "/my-demo/{id}", function(){})
+
+      web.uri("/my-demo/{id}", { id : "foo" }).should.equal("/my-demo/foo")
+    })
+    it("should be non-destructive if no variable parts present", function(){
+      var web = nap.web()
+        .resource("demo", "/my-demo/{id}", function(){})
+
+      web.uri("/my-demo/bar", { id : "foo" }).should.equal("/my-demo/bar")
+    })
   })
   describe("web.negotiate", function(){
     describe("selector", function(){

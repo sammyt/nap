@@ -229,13 +229,11 @@ function newWeb(){
     return web
   }
 
-  web.uri = function(name, params){
+  web.uri = function(ptn, params){
 
-    var meta = resources[name]
-
-    if(!meta) throw new Error(name + " not found")
-
-    var parts = rhumb._parse(meta.ptn)
+    var meta = resources[ptn]
+    if(meta) ptn = meta.ptn
+    var parts = rhumb._parse(ptn)
 
     return parts.reduce(
       function(uri, part){

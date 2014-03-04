@@ -115,10 +115,10 @@ nap = function environment(nap_window) {
       req.headers || (req.headers = {}), req.headers.accept || (req.headers.accept = "application/x.nap.view");
       var match = routes.match(req.uri);
       return match ? (req.params = match.params, match.fn.call(null, req, cb), web) : void cb(null, error(404));
-    }, web.uri = function(name, params) {
-      var meta = resources[name];
-      if (!meta) throw new Error(name + " not found");
-      var parts = rhumb._parse(meta.ptn);
+    }, web.uri = function(ptn, params) {
+      var meta = resources[ptn];
+      meta && (ptn = meta.ptn);
+      var parts = rhumb._parse(ptn);
       return parts.reduce(function(uri, part) {
         return "var" == part.type ? [ uri, params[part.input] ].join("/") : [ uri, part.input ].join("/");
       }, "");
