@@ -1,10 +1,11 @@
 nap = function environment(nap_window) {
+  function noop() {}
   function into(node) {
     return function(err, res) {
-      200 == res.statusCode && (res.headers.contentType && "application/x.nap.view" != res.headers.contentType || isFn(res.body) && res.body(node));
+      200 == res.statusCode && (res.headers.contentType && "application/x.nap.view" != res.headers.contentType || isFn(res.body) && node && (node.dispatchEvent && node.dispatchEvent(new Event("update")), 
+      res.body(node)));
     };
   }
-  function noop() {}
   function is(n, s) {
     return matchesSelector.call(n, s);
   }
@@ -30,7 +31,7 @@ nap = function environment(nap_window) {
       headers: {}
     };
   }
-  function byDispatch(wants, error) {
+  function dispatcher(wants, error) {
     return function(map) {
       var args = [];
       return Object.keys(map).forEach(function(key) {
@@ -38,32 +39,11 @@ nap = function environment(nap_window) {
       }), args.push(error), dispatch.apply(null, args);
     };
   }
-  function wants(comparator, respond) {
+  function uses(comparator, respond) {
     return function(key, fn) {
       return function(req, res) {
         return comparator(req, key) ? (fn.call(null, req, respond(key, res)), !0) : void 0;
       };
-    };
-  }
-  function checkMethod(req, method) {
-    return req.method == method;
-  }
-  function checkAcceptType(req, type) {
-    return req.headers.accept == type;
-  }
-  function setContentType(type, res) {
-    return function(err, data) {
-      data.headers.contentType = type, res(err, data);
-    };
-  }
-  function setMethod(type, res) {
-    return function(err, data) {
-      data.method = type, res(err, data);
-    };
-  }
-  function errorsWith(code) {
-    return function(req, res) {
-      return res(null, error(code)), !0;
     };
   }
   function dispatch() {
@@ -73,6 +53,27 @@ nap = function environment(nap_window) {
       return fns.some(function(fn) {
         return fn.apply(null, args);
       });
+    };
+  }
+  function checkMethod(req, method) {
+    return req.method == method;
+  }
+  function setMethod(type, res) {
+    return function(err, data) {
+      data.method = type, res(err, data);
+    };
+  }
+  function checkAcceptType(req, type) {
+    return req.headers.accept == type;
+  }
+  function setContentType(type, res) {
+    return function(err, data) {
+      data.headers.contentType = type, res(err, data);
+    };
+  }
+  function errorsWith(code) {
+    return function(req, res) {
+      return res(null, error(code)), !0;
     };
   }
   function bySelector() {
@@ -104,14 +105,10 @@ nap = function environment(nap_window) {
         };
       }), web);
     }, web.req = function(path, cb) {
-      var req = path, cb = cb || noop;
-      isStr(path) && (req = {
-        uri: path,
-        method: "get",
-        headers: {
-          accept: "application/x.nap.view"
-        }
-      }), req.web = web, req.method || (req.method = "get"), "get" == req.method && delete req.body, 
+      var req = isStr(path) ? {
+        uri: path
+      } : path, cb = cb || noop;
+      req.web = web, req.method || (req.method = "get"), "get" == req.method && delete req.body, 
       req.headers || (req.headers = {}), req.headers.accept || (req.headers.accept = "application/x.nap.view");
       var match = routes.match(req.uri);
       return match ? (req.params = match.params, match.fn.call(null, req, cb), web) : void cb(null, error(404));
@@ -127,14 +124,14 @@ nap = function environment(nap_window) {
   var nap = {
     environment: environment
   }, nap_window = nap_window || window, nap_document = nap_window.document;
-  nap.web = newWeb, nap.is = is, nap.negotiate = {
+  nap.web = newWeb, nap.is = is, nap.into = into, nap.negotiate = {
     selector: bySelector,
-    method: byDispatch(wants(checkMethod, setMethod), errorsWith(405)),
-    accept: byDispatch(wants(checkAcceptType, setContentType), errorsWith(415))
+    method: dispatcher(uses(checkMethod, setMethod), errorsWith(405)),
+    accept: dispatcher(uses(checkAcceptType, setContentType), errorsWith(415))
   }, nap.responses = {
     ok: ok,
     error: error
-  }, nap.into = into;
+  };
   var root = nap_document.documentElement, matchesSelector = root.matchesSelector || root.webkitMatchesSelector || root.mozMatchesSelector || root.msMatchesSelector || root.oMatchesSelector;
   return nap;
 }(), function(root) {
