@@ -10,16 +10,17 @@
     function init(){
     
       var web = nap.web()
-        .resource("weather", "/weather/{when}", function(req, res){
+        , ok = nap.responses.ok
+        , into = nap.into
+
+      web.resource("weather", "/weather/{when}", function(req, res){
 
           function view(node) {
             d3.select(node).text("snow " + req.params.when)
           }
 
-          res(false, view)
+          res(false, ok(view))
         })
-
-      var into = nap.into
 
       var days = [ "sunday" , "monday", "tuesday" , "wednesday" ]
 

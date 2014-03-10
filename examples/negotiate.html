@@ -26,12 +26,14 @@
         , ".little", whisper
         )
 
-        res(false, view)
+        res(false, ok(view))
       }
 
       // add speak as a resource
       var web = nap.web()
-        .resource("/speak/{name}", speak)
+        , ok = nap.responses.ok
+
+      web.resource("/speak/{name}", speak)
 
       // get the nodes
       var big = d3.select(".big").node()

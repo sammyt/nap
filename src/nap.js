@@ -31,7 +31,7 @@ function into(node) {
     if(res.headers.contentType && res.headers.contentType != "application/x.nap.view") return
     if(!isFn(res.body)) return
     
-   // node.dispatchEvent(new Event("update"))
+    node.dispatchEvent(new Event("update"))
     res.body(node)
   }
 }

@@ -8,23 +8,27 @@
   
   <script type="text/javascript">
     function init(){
+
+      var ok = nap.responses.ok
+        , into = nap.into
       
       function bar(req, res){
         console.log("called", req.uri, req.params)
-        res(false, "bar called")
+        res(false, ok("bar called"))
       }
 
       function foo(req, res){
         console.log("called", req.uri, req.params)
-        res(false, "foo called")
+        res(false, ok("foo called"))
       }
 
       function speak(req, res){
         res(
           false
-        , function(node) {
-          d3.select(node).text(req.params.name)
-        })
+        , ok(function(node) {
+            d3.select(node).text(req.params.name)
+          })
+        )
       }
 
       // setup this web
@@ -41,9 +45,6 @@
       web.req("/foo/chips/wibble", function(err, res) {
         console.log(res.body)
       })
-
-      // Use the view client
-      var into = nap.into
 
       // create some views from requests
       d3.select(".message")

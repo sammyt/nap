@@ -12,12 +12,14 @@
       function speak(req, res){
         res(
           false
-        , function(node) {
-          d3.select(node).text(req.params.name)
-        })
+        , ok(function(node) {
+            d3.select(node).text(req.params.name)
+          })
+        )
       }
 
       var web = nap.web().resource("/speak/{name}", speak)
+        , ok = nap.responses.ok
         , node = d3.select(".container").node()
         , target = nap.into(node)
 

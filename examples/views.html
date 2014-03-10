@@ -22,12 +22,15 @@
 
         }
         
-        res(false, view)
+        res(false, ok(view))
       }
 
       // setup this web
       var web = nap.web()
-        .resource("/speak/{name}", speak)
+        , ok = nap.responses.ok
+        , into = nap.into
+
+      web.resource("/speak/{name}", speak)
 
       // view into specific context
       var top = d3.select(".top").node()
@@ -39,8 +42,6 @@
         res.body(top)
       })
 
-      // Use the view client
-      var into = nap.into
       web.req("/speak/sammy", into(bottom))
       web.req("/speak/sammy", into(bottom))
       web.req("/speak/sammy", into(bottom))
