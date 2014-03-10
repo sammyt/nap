@@ -1,11 +1,3 @@
-// TODO
-// status / statusCode
-// err, data signature for callbacks
-// call res with node
-// middleware 
-// exceptions vs 400 responses
-
-
 nap = (function environment(nap_window){
 
 var nap = { environment: environment }
