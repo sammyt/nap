@@ -191,20 +191,9 @@ function newWeb(){
 
   web.req = function(path, cb){
     
-    var req = path
-      , cb = cb || noop 
-      , res
+    var req = isStr(path) ? {uri: path} : path
+      , cb = cb || noop
     
-    if(isStr(path)){
-      req = {
-        uri: path
-      , method : "get"
-      , headers : {
-          accept: "application/x.nap.view"
-        }
-      }
-    }
-
     req.web = web
     req.method || (req.method = "get")
     req.method == "get" && (delete req["body"])
