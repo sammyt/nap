@@ -6,16 +6,27 @@ var nap = { environment: environment }
   
 nap.web = newWeb
 nap.is = is
+nap.into = into
+
 nap.negotiate = { 
   selector : bySelector
-, method   : byDispatch(wants(checkMethod, setMethod), errorsWith(405))
-, accept   : byDispatch(wants(checkAcceptType, setContentType), errorsWith(415))
+, method   : dispatcher(uses(checkMethod, setMethod), errorsWith(405))
+, accept   : dispatcher(uses(checkAcceptType, setContentType), errorsWith(415))
 }
+
 nap.responses = {
   ok : ok
 , error : error
 }
-nap.into = into
+
+var root = nap_document.documentElement
+  , matchesSelector = root.matchesSelector 
+    || root.webkitMatchesSelector 
+    || root.mozMatchesSelector 
+    || root.msMatchesSelector 
+    || root.oMatchesSelector
+
+function noop(){}
 
 function into(node) {
   return function(err, res) {
@@ -28,15 +39,6 @@ function into(node) {
     res.body(node)
   }
 }
-
-function noop(){}
-
-var root = nap_document.documentElement
-  , matchesSelector = root.matchesSelector 
-    || root.webkitMatchesSelector 
-    || root.mozMatchesSelector 
-    || root.msMatchesSelector 
-    || root.oMatchesSelector
 
 function is(n, s) {
   return matchesSelector.call(n, s);
@@ -69,7 +71,7 @@ function error(code) {
   }
 }
 
-function byDispatch(wants, error) {
+function dispatcher(wants, error) {
   return function(map) {
     var args = []
     Object.keys(map).forEach(function(key) {
@@ -80,7 +82,7 @@ function byDispatch(wants, error) {
   }
 }
 
-function wants(comparator, respond) {
+function uses(comparator, respond) {
   return function(key, fn) {
     return function(req, res) {
       if(comparator(req, key)) {
@@ -91,8 +93,25 @@ function wants(comparator, respond) {
   }
 }
 
+function dispatch() {
+  var fns = toArray(arguments)
+  return function() {
+    var args = toArray(arguments)
+    return fns.some(function(fn) {
+      return fn.apply(null, args)
+    })
+  }
+}
+
 function checkMethod(req, method) {
   return req.method == method
+}
+
+function setMethod(type, res) {
+  return function(err, data) {
+    data.method = type
+    res(err, data)
+  }
 }
 
 function checkAcceptType(req, type) {
@@ -106,27 +125,10 @@ function setContentType(type, res) {
   }
 }
 
-function setMethod(type, res) {
-  return function(err, data) {
-    data.method = type
-    res(err, data)
-  }
-}
-
 function errorsWith(code) {
   return function(req, res) {
     res(null, error(code))
     return true
-  }
-}
-
-function dispatch() {
-  var fns = toArray(arguments)
-  return function() {
-    var args = toArray(arguments)
-    return fns.some(function(fn) {
-      return fn.apply(null, args)
-    })
   }
 }
 
