@@ -30,8 +30,9 @@ function into(node) {
     if(res.statusCode != 200) return
     if(res.headers.contentType && res.headers.contentType != "application/x.nap.view") return
     if(!isFn(res.body)) return
-    
-    node.dispatchEvent(new Event("update"))
+    if(!node) return
+
+    node.dispatchEvent && node.dispatchEvent(new Event("update"))
     res.body(node)
   }
 }

@@ -402,6 +402,7 @@ describe("Nap", function(){
       node = d3.select("body")
         .append("div")
         .classed("nap-tests", true)
+        .node()
     })
     afterEach(function(){
       node.remove()
