@@ -218,67 +218,6 @@ describe("Nap", function(){
         cb.should.have.been.calledWith("No matching selector")
       })
     })
-   /* describe("ordered", function(){
-      it("should try handlers in order they are added", function(){
-        var calls = []
-          , error = sinon.spy()
-
-        nap.web().resource(
-          "/nothing"
-        , nap.negotiate.ordered(
-            [ function(req, res){ calls.push("one"), res(true) }
-            , function(req, res){ calls.push("two"), res(true) }  
-            ]
-          , error
-          )
-        )
-        .req("/nothing", function(err, res) {
-          //console.log(err, res)
-        })
-
-        calls.should.eql(["one", "two"])
-      })
-      it("should fail when all handers fail", function(){
-        var calls = []
-          , req = sinon.spy()
-          , res = sinon.spy()
-          , error = sinon.spy()
-          , ordered = nap.negotiate.ordered(
-            [ function(req, res){ calls.push("one"), res(true, "one") }
-            , function(req, res){ calls.push("two"), res(true, "two") }  
-            ]
-          , error
-          )
-
-        ordered.call(null, req, res)
-
-        calls.should.eql(["one", "two"])
-        res.should.have.been.calledOnce
-        res.args[0][0].should.equal("All handlers failed")
-        error.should.have.been.calledOnce
-      })
-      it("should only call handers until one succeeds", function(){
-        var calls = []
-          , cb = sinon.spy()
-          , error = sinon.spy()
-
-        nap.web().resource(
-          "/nothing"
-        , nap.negotiate.ordered(
-            [ function(req, res){ calls.push("one"),   res(true, "one") }
-            , function(req, res){ calls.push("two"),   res(true, "two") }
-            , function(req, res){ calls.push("three"), res(false, "three") }  
-            , function(req, res){ calls.push("four"),  res(false, "four") }  
-            ]
-          , error
-          )
-        )
-        .req("/nothing", cb)
-
-        calls.should.eql(["one", "two", "three"])
-        cb.should.have.been.calledOnce
-      })
-    })*/
     describe("negotiate.method", function(){
       it("should only accept methods where handlers are provided", function(){
         var web = nap.web()
@@ -394,6 +333,83 @@ describe("Nap", function(){
       web.req("/sausage", cb)
       cb.should.have.been.calledOnce
       cb.args[0][1].statusCode.should.equal(415)
+    })
+  })
+  describe("middleware", function(){
+    it("should invoke middleware for request and response", function(){
+      var web = nap.web()
+        , cb = sinon.spy()
+        , fn = sinon.spy(function(req, res){
+            res(null, nap.responses.ok("hello"))
+          })
+        , middle = sinon.spy(function(req, res, next) {
+            // do something with req
+            req.headers.accept = "application/json"
+
+            resSpy = sinon.spy(function(err, data) {
+              // do something with res
+              data.headers.contentType = "application/json"
+              res(err, data)
+            })
+
+            next(req, resSpy)
+          })
+        , resSpy
+
+      web.use(middle)
+      web.resource("/wibble", fn)
+      web.req("/wibble", cb)
+
+      middle.should.have.been.calledOnce
+      middle.should.have.been.calledBefore(resSpy)
+      middle.should.have.been.calledBefore(fn)
+
+      fn.should.have.been.calledOnce
+      fn.should.have.been.calledAfter.middle
+      fn.should.have.been.calledBefore.resSpy
+      fn.args[0][0].headers.accept.should.equal("application/json")
+
+      resSpy.should.have.been.calledOnce
+      resSpy.should.have.been.calledAfter(fn)
+      resSpy.should.have.been.calledBefore(cb)
+      resSpy.args[0][1].headers.contentType.should.equal("application/json")
+
+      cb.should.have.been.calledOnce
+      cb.should.have.been.calledAfter(resSpy)
+      cb.args[0][1].body.should.equal("hello")
+    })
+    it("should invoke middleware stack in correct order", function(){
+      var web = nap.web()
+        , cb = sinon.spy()
+        , fn = sinon.spy(function(req, res){
+            res(null, nap.responses.ok("hello"))
+          })
+        , resSpy1
+        , resSpy2
+        , middle1 = sinon.spy(function(req, res, next) {
+            resSpy1 = sinon.spy(function(err, data) {
+              res(err, data)
+            })
+            next(req, resSpy1)
+          })
+        , middle2 = sinon.spy(function(req, res, next) {
+            resSpy2 = sinon.spy(function(err, data) {
+              res(err, data)
+            })
+            next(req, resSpy2)
+          })
+
+      web.use(middle1, middle2)
+      web.resource("/wibble", fn)
+      web.req("/wibble", cb)
+
+      middle1.should.have.been.calledOnce
+      middle2.should.have.been.calledOnce
+      middle1.should.have.been.calledBefore(middle2)
+
+      resSpy1.should.have.been.calledOnce
+      resSpy2.should.have.been.calledOnce
+      resSpy2.should.have.been.calledBefore(resSpy1)
     })
   })
   describe("nap.into", function(){

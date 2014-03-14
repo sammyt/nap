@@ -160,11 +160,22 @@ function bySelector(){
   }
 }
 
+function wrap(fn, stack) {
+  return stack.reduce(middleware, fn)
+}
+
+function middleware(next, middle) {
+  return function(req, res) {
+    middle.call(null, req, res, next)
+  }
+}
+
 function newWeb(){
   var web = {}
     , view = nap_document.documentElement
     , resources = {}
     , routes = rhumb.create()
+    , middleware = []
   
   web.resource = function(name, ptn, handler){
     if(arguments.length == 1) return resources[name]
@@ -173,6 +184,8 @@ function newWeb(){
       handler = ptn
       ptn = name
     }
+
+    handler = wrap(handler, middleware)
 
     resources[name] = {
       name : name
@@ -210,6 +223,12 @@ function newWeb(){
     req.params = match.params
     match.fn.call(null, req, cb)
 
+    return web
+  }
+
+  web.use = function() {
+    if(!arguments.length) return web
+    middleware = toArray(arguments).reverse().concat(middleware)
     return web
   }
 
