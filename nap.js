@@ -90,11 +90,19 @@ nap = function environment(nap_window) {
       }), called || cb("No matching selector");
     };
   }
+  function wrap(fn, stack) {
+    return stack.reduce(middleware, fn);
+  }
+  function middleware(next, middle) {
+    return function(req, res) {
+      middle.call(null, req, res, next);
+    };
+  }
   function newWeb() {
-    var web = {}, resources = (nap_document.documentElement, {}), routes = rhumb.create();
+    var web = {}, resources = (nap_document.documentElement, {}), routes = rhumb.create(), middleware = [];
     return web.resource = function(name, ptn, handler) {
       return 1 == arguments.length ? resources[name] : (2 == arguments.length && (handler = ptn, 
-      ptn = name), resources[name] = {
+      ptn = name), handler = wrap(handler, middleware), resources[name] = {
         name: name,
         ptn: ptn,
         handler: handler
@@ -112,6 +120,9 @@ nap = function environment(nap_window) {
       req.headers || (req.headers = {}), req.headers.accept || (req.headers.accept = "application/x.nap.view");
       var match = routes.match(req.uri);
       return match ? (req.params = match.params, match.fn.call(null, req, cb), web) : void cb(null, error(404));
+    }, web.use = function() {
+      return arguments.length ? (middleware = toArray(arguments).reverse().concat(middleware), 
+      web) : web;
     }, web.uri = function(ptn, params) {
       var meta = resources[ptn];
       meta && (ptn = meta.ptn);

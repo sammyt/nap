@@ -1,0 +1,50 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script type="text/javascript" src="../components/rhumb/dist/rhumb.js"></script>
+  <script type="text/javascript" src="../src/nap.js"></script>
+  <script type="text/javascript" src="../lib/d3/d3.js"></script>
+  
+  <script type="text/javascript">
+    function init(){
+
+      function foo(req, res){
+        // resource fails to respond
+      }
+
+      // middleware function
+      function requestTimeout(req, res, next) {
+
+        var timedOut
+
+        var requestTimeout = setTimeout(function() {
+          timedOut = true
+          res(null, nap.responses.error(408))
+        }, 500) 
+
+        next(req, function(err, data) {
+          clearTimeout(requestTimeout)
+          if(!timedOut) res(err, data)
+        })
+      }
+
+      // setup this web using middleware
+      var web = nap.web()
+        .use(requestTimeout)
+        .resource("/foo", foo)
+
+      // make a requests
+      web.req("/foo", function(err, res) {
+        console.log(res)
+      })
+    }
+  </script>
+  <title>Middleware</title>
+</head>
+<body onload="init()">
+</body>
+</html>
+
+
+
