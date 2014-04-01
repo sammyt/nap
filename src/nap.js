@@ -53,7 +53,7 @@ function isStr(inst){
 }
 
 function toArray(args) {
-  return [].slice.call(args)
+  return Array.prototype.slice.call(args)
 }
 
 function ok(data) {
@@ -69,6 +69,10 @@ function error(code) {
     statusCode : code
   , headers : {}
   }
+}
+
+function notFound(req, res) {
+  res(null, error(404))
 }
 
 function dispatcher(wants, error) {
@@ -213,16 +217,9 @@ function newWeb(){
     req.headers || (req.headers = {})
     req.headers.accept || (req.headers.accept = "application/x.nap.view")
 
-    var match = routes.match(req.uri)
-
-    if(!match) {
-      cb(null, error(404))
-      return
-    }
-
+    var match = routes.match(req.uri) || { fn : wrap(notFound, middleware) }
     req.params = match.params
     match.fn.call(null, req, cb)
-
     return web
   }
 

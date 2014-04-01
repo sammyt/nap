@@ -16,7 +16,7 @@ nap = function environment(nap_window) {
     return "string" == typeof inst;
   }
   function toArray(args) {
-    return [].slice.call(args);
+    return Array.prototype.slice.call(args);
   }
   function ok(data) {
     return {
@@ -30,6 +30,9 @@ nap = function environment(nap_window) {
       statusCode: code,
       headers: {}
     };
+  }
+  function notFound(req, res) {
+    res(null, error(404));
   }
   function dispatcher(wants, error) {
     return function(map) {
@@ -118,8 +121,10 @@ nap = function environment(nap_window) {
       } : path, cb = cb || noop;
       req.web = web, req.method || (req.method = "get"), "get" == req.method && delete req.body, 
       req.headers || (req.headers = {}), req.headers.accept || (req.headers.accept = "application/x.nap.view");
-      var match = routes.match(req.uri);
-      return match ? (req.params = match.params, match.fn.call(null, req, cb), web) : void cb(null, error(404));
+      var match = routes.match(req.uri) || {
+        fn: wrap(notFound, middleware)
+      };
+      return req.params = match.params, match.fn.call(null, req, cb), web;
     }, web.use = function() {
       return arguments.length ? (middleware = toArray(arguments).reverse().concat(middleware), 
       web) : web;
