@@ -2,7 +2,7 @@ nap = function environment(nap_window) {
   function noop() {}
   function into(node) {
     return function(err, res) {
-      200 == res.statusCode && (res.headers.contentType && "application/x.nap.view" != res.headers.contentType || isFn(res.body) && node && (node.dispatchEvent && node.dispatchEvent(new Event("update")), 
+      200 == res.statusCode && (res.headers.contentType && "application/x.nap.view" != res.headers.contentType || isFn(res.body) && node && (node.dispatchEvent && node.dispatchEvent(new CustomEvent("update")), 
       res.body(node)));
     };
   }

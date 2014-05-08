@@ -35,7 +35,7 @@ function into(node) {
     if(!isFn(res.body)) return
     if(!node) return
 
-    node.dispatchEvent && node.dispatchEvent(new Event("update"))
+    node.dispatchEvent && node.dispatchEvent(new CustomEvent("update"))
     res.body(node)
   }
 }
