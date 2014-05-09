@@ -5,19 +5,19 @@ var nap = { environment: environment }
   , nap_document = nap_window.document
   
 nap.web = newWeb
+nap.is = is
+nap.into = into
+
 nap.negotiate = { 
   selector : bySelector
-, ordered  : byOrdered
-, method   : byComparator("Method", methodComparator)
-, accept   : byComparator("Accept-type", acceptTypeComparator)
-, invoke   : invoke
+, method   : dispatcher(uses(checkMethod, setMethod), errorsWith(405))
+, accept   : dispatcher(uses(checkAcceptType, setContentType), errorsWith(415))
 }
 
-nap.replies = {
-  view : repliesView
+nap.responses = {
+  ok : ok
+, error : error
 }
-
-function noop(){}
 
 var root = nap_document.documentElement
   , matchesSelector = root.matchesSelector 
@@ -25,6 +25,20 @@ var root = nap_document.documentElement
     || root.mozMatchesSelector 
     || root.msMatchesSelector 
     || root.oMatchesSelector
+
+function noop(){}
+
+function into(node) {
+  return function(err, res) {
+    if(res.statusCode != 200) return
+    if(res.headers.contentType && res.headers.contentType != "application/x.nap.view") return
+    if(!isFn(res.body)) return
+    if(!node) return
+
+    node.dispatchEvent && node.dispatchEvent(new CustomEvent("update"))
+    res.body(node)
+  }
+}
 
 function is(n, s) {
   return matchesSelector.call(n, s);
@@ -38,43 +52,93 @@ function isStr(inst){
   return typeof inst === "string"
 }
 
-function byOrdered(){
-  var fns = [].slice.apply(arguments, [0])
-  
-  return function(req, res){
-    var scope = this
-    if(!fns.length){
-      res("No handers specified")
-      return
-    }
+function toArray(args) {
+  return Array.prototype.slice.call(args)
+}
 
-    next([].concat(fns))
+function ok(data) {
+  return {
+    body : data
+  , statusCode : 200
+  , headers : {}
+  }
+}
 
-    function next(fns){
-      var fn = fns.shift()
-      if(!fn){
-        res("All handlers failed")
-        return
+function error(code) {
+  return {
+    statusCode : code
+  , headers : {}
+  }
+}
+
+function notFound(req, res) {
+  res(null, error(404))
+}
+
+function dispatcher(wants, error) {
+  return function(map) {
+    var args = []
+    Object.keys(map).forEach(function(key) {
+      args.push(wants(key, map[key]))
+    })
+    args.push(error)
+    return dispatch.apply(null, args)
+  }
+}
+
+function uses(comparator, respond) {
+  return function(key, fn) {
+    return function(req, res) {
+      if(comparator(req, key)) {
+        fn.call(null, req, respond(key, res))
+        return true
       }
-      invoke(
-        scope
-      , fn
-      , req
-      , function(err, data){
-          if(err){
-            next(fns)
-          } else {
-            res(err, data)
-          }
-        }
-      )
     }
+  }
+}
+
+function dispatch() {
+  var fns = toArray(arguments)
+  return function() {
+    var args = toArray(arguments)
+    return fns.some(function(fn) {
+      return fn.apply(null, args)
+    })
+  }
+}
+
+function checkMethod(req, method) {
+  return req.method == method
+}
+
+function setMethod(type, res) {
+  return function(err, data) {
+    data.method = type
+    res(err, data)
+  }
+}
+
+function checkAcceptType(req, type) {
+  return req.headers.accept == type
+}
+
+function setContentType(type, res) {
+  return function(err, data) {
+    data.headers.contentType = type
+    res(err, data)
+  }
+}
+
+function errorsWith(code) {
+  return function(req, res) {
+    res(null, error(code))
+    return true
   }
 }
 
 function bySelector(){
 
-  var options = [].slice.apply(arguments, [0])
+  var options = toArray(arguments)
     .reduce(
       function(curr, next){
         if(isStr(next)) curr.push({ selector : next })
@@ -84,82 +148,29 @@ function bySelector(){
     , []
     )
   
-  return function(req, res){
-    var node = this instanceof nap_window.HTMLElement 
-        ? this 
-        : req.web.view()
-      , called = false
+  return function(node, cb){
+    var called = false
+      , cb = cb || noop
 
     called = options.some(function(option){
       if(is(node, option.selector)){
-        invoke(node, option.fn, req, res)
+        option.fn.call(null, node)
+        cb(null, option.selector)
         return true
       }
     })
 
-    if(!called){
-      res("No matches found")
-    }
+    if(!called) cb("No matching selector")
   }
 }
 
-function methodComparator(req, method) {
-  return req.method == method
+function wrap(fn, stack) {
+  return stack.reduce(middleware, fn)
 }
 
-function acceptTypeComparator(req, acceptType) {
-  return req.headers.accept == acceptType
-}
-
-function byComparator(name, comparator){
-  return function(map){
-
-    var order = Object.keys(map)
-      .map(function(key){
-        return handleKey(key, map[key], comparator, name)
-      })
-
-    return function(req, res){
-      var fn = byOrdered.apply(null, order)
-      invoke(this, fn, req, res)
-    }
-  }
-}
-
-function handleKey(key, fn, matches, name){
-  return function(req, res){
-    if(matches(req, key)){
-      invoke(this, fn, req, res)
-      return
-    }
-    res(name + " Not Supported")
-  }
-}
-
-function repliesView(fn){
-  return function(req, res){
-    var node = this instanceof nap_window.HTMLElement 
-      ? this 
-      : req.web.view()
-
-    invoke(node, fn, req, res)
-  } 
-}
-
-function invoke(scope, fn, req, cb){
-  var sync = false
-    , args = [req]
-    
-  if(fn.length > 1) {
-    args.push(isFn(cb) ? cb : noop)
-  } else {
-    sync = true
-  }
-  
-  fn.apply(scope, args);
-
-  if(sync && isFn(cb)){ 
-    cb() 
+function middleware(next, middle) {
+  return function(req, res) {
+    middle.call(null, req, res, next)
   }
 }
 
@@ -168,6 +179,7 @@ function newWeb(){
     , view = nap_document.documentElement
     , resources = {}
     , routes = rhumb.create()
+    , middleware = []
   
   web.resource = function(name, ptn, handler){
     if(arguments.length == 1) return resources[name]
@@ -176,6 +188,8 @@ function newWeb(){
       handler = ptn
       ptn = name
     }
+
+    handler = wrap(handler, middleware)
 
     resources[name] = {
       name : name
@@ -194,52 +208,32 @@ function newWeb(){
 
   web.req = function(path, cb){
     
-    var req = path
+    var req = isStr(path) ? {uri: path} : path
+      , cb = cb || noop
     
-    if(isStr(path)){
-      req = {
-        uri: path
-      , method : "get"
-      , headers : {
-          accept: "html"
-        }
-      }
-    }
-
     req.web = web
     req.method || (req.method = "get")
     req.method == "get" && (delete req["body"])
     req.headers || (req.headers = {})
-    req.headers.accept || (req.headers.accept = "html")
+    req.headers.accept || (req.headers.accept = "application/x.nap.view")
 
-    var match = routes.match(req.uri)
-    if(!match) {
-      cb(req.uri + " not found")
-      return;
-    }
-
+    var match = routes.match(req.uri) || { fn : wrap(notFound, middleware) }
     req.params = match.params
-
-    invoke(this, match.fn, req, cb)
-
+    match.fn.call(null, req, cb)
     return web
   }
 
-  web.view = function(val){
-    if(!arguments.length) return view
-    view = val
+  web.use = function() {
+    if(!arguments.length) return web
+    middleware = toArray(arguments).reverse().concat(middleware)
     return web
   }
 
-  web.uri = function(name, params){
+  web.uri = function(ptn, params){
 
-    // TODO: support all ptn types
-
-    var meta = resources[name]
-
-    if(!meta) throw new Error(name + " not found")
-
-    var parts = rhumb._parse(meta.ptn)
+    var meta = resources[ptn]
+    if(meta) ptn = meta.ptn
+    var parts = rhumb._parse(ptn)
 
     return parts.reduce(
       function(uri, part){

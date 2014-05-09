@@ -9,43 +9,42 @@
   <script type="text/javascript">
     function init(){
 
+      var myTodo = todo()
+        , into = nap.into
+        , ok = nap.responses.ok
+        , web = nap.web().resource("/todos", myTodo) 
+
       function todo(){
         var list = ["this", "that"]
 
-        function view(req){
-          d3.select(this)
-            .selectAll("li")
-            .data(list, function(d){return d})
-            .enter().append("li")
-            .text(function(d){return d})
+        function view(req, res) {
+
+          res(
+            false
+          , ok(function(node){
+              d3.select(node)
+                .selectAll("li")
+                .data(list, function(d){return d})
+                .enter().append("li")
+                .text(function(d){return d})
+              })
+          )
         }
 
-        function add(req){
+        function add(req, res){
           list.push(req.body)
+          res(false, ok())
         }
 
-        return {
-          view : view
-        , add : add
-        }
+        return nap.negotiate.method(
+          { get: view
+          , send: add 
+          }
+        )
       }
       
-      var myTodo = todo()
-
-      web = nap.web()
-        .view(d3.select("ul").node())
-        .resource("/todos", 
-          nap.negotiate.method(
-            { get: nap.replies.view(myTodo.view)
-            , send: myTodo.add 
-            }
-          )
-        )
-
-      
       function render(){
-        var req = web.req.bind(d3.select("ul").node())
-        req("/todos")
+        web.req("/todos", into(d3.select("ul").node()))
       }
 
       render()

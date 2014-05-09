@@ -1,5 +1,11 @@
 nap = function environment(nap_window) {
   function noop() {}
+  function into(node) {
+    return function(err, res) {
+      200 == res.statusCode && (res.headers.contentType && "application/x.nap.view" != res.headers.contentType || isFn(res.body) && node && (node.dispatchEvent && node.dispatchEvent(new CustomEvent("update")), 
+      res.body(node)));
+    };
+  }
   function is(n, s) {
     return matchesSelector.call(n, s);
   }
@@ -9,76 +15,97 @@ nap = function environment(nap_window) {
   function isStr(inst) {
     return "string" == typeof inst;
   }
-  function byOrdered() {
-    var fns = [].slice.apply(arguments, [ 0 ]);
+  function toArray(args) {
+    return Array.prototype.slice.call(args);
+  }
+  function ok(data) {
+    return {
+      body: data,
+      statusCode: 200,
+      headers: {}
+    };
+  }
+  function error(code) {
+    return {
+      statusCode: code,
+      headers: {}
+    };
+  }
+  function notFound(req, res) {
+    res(null, error(404));
+  }
+  function dispatcher(wants, error) {
+    return function(map) {
+      var args = [];
+      return Object.keys(map).forEach(function(key) {
+        args.push(wants(key, map[key]));
+      }), args.push(error), dispatch.apply(null, args);
+    };
+  }
+  function uses(comparator, respond) {
+    return function(key, fn) {
+      return function(req, res) {
+        return comparator(req, key) ? (fn.call(null, req, respond(key, res)), !0) : void 0;
+      };
+    };
+  }
+  function dispatch() {
+    var fns = toArray(arguments);
+    return function() {
+      var args = toArray(arguments);
+      return fns.some(function(fn) {
+        return fn.apply(null, args);
+      });
+    };
+  }
+  function checkMethod(req, method) {
+    return req.method == method;
+  }
+  function setMethod(type, res) {
+    return function(err, data) {
+      data.method = type, res(err, data);
+    };
+  }
+  function checkAcceptType(req, type) {
+    return req.headers.accept == type;
+  }
+  function setContentType(type, res) {
+    return function(err, data) {
+      data.headers.contentType = type, res(err, data);
+    };
+  }
+  function errorsWith(code) {
     return function(req, res) {
-      function next(fns) {
-        var fn = fns.shift();
-        return fn ? void invoke(scope, fn, req, function(err, data) {
-          err ? next(fns) : res(err, data);
-        }) : void res("All handlers failed");
-      }
-      var scope = this;
-      return fns.length ? void next([].concat(fns)) : void res("No handers specified");
+      return res(null, error(code)), !0;
     };
   }
   function bySelector() {
-    var options = [].slice.apply(arguments, [ 0 ]).reduce(function(curr, next) {
+    var options = toArray(arguments).reduce(function(curr, next) {
       return isStr(next) ? curr.push({
         selector: next
       }) : curr[curr.length - 1].fn = next, curr;
     }, []);
-    return function(req, res) {
-      var node = this instanceof nap_window.HTMLElement ? this : req.web.view(), called = !1;
+    return function(node, cb) {
+      var called = !1, cb = cb || noop;
       called = options.some(function(option) {
-        return is(node, option.selector) ? (invoke(node, option.fn, req, res), !0) : void 0;
-      }), called || res("No matches found");
+        return is(node, option.selector) ? (option.fn.call(null, node), cb(null, option.selector), 
+        !0) : void 0;
+      }), called || cb("No matching selector");
     };
   }
-  function byMethod(map) {
-    var order = Object.keys(map).map(function(method) {
-      return handleMethod(method, map[method]);
-    });
+  function wrap(fn, stack) {
+    return stack.reduce(middleware, fn);
+  }
+  function middleware(next, middle) {
     return function(req, res) {
-      var fn = byOrdered.apply(null, order);
-      invoke(this, fn, req, res);
+      middle.call(null, req, res, next);
     };
-  }
-  function handleMethod(method, fn) {
-    return function(req, res) {
-      return req.method == method ? void invoke(this, fn, req, res) : void res("Method Not Supported");
-    };
-  }
-  function byAcceptType(map) {
-    var order = Object.keys(map).map(function(acceptType) {
-      return handleAcceptType(acceptType, map[acceptType]);
-    });
-    return function(req, res) {
-      var fn = byOrdered.apply(null, order);
-      invoke(this, fn, req, res);
-    };
-  }
-  function handleAcceptType(acceptType, fn) {
-    return function(req, res) {
-      return req.headers.accept == acceptType ? void invoke(this, fn, req, res) : void res("Accept-type Not Supported");
-    };
-  }
-  function repliesView(fn) {
-    return function(req, res) {
-      var node = this instanceof nap_window.HTMLElement ? this : req.web.view();
-      invoke(node, fn, req, res);
-    };
-  }
-  function invoke(scope, fn, req, cb) {
-    var sync = !1, args = [ req ];
-    fn.length > 1 ? args.push(isFn(cb) ? cb : noop) : sync = !0, fn.apply(scope, args), 
-    sync && isFn(cb) && cb();
   }
   function newWeb() {
-    var web = {}, view = nap_document.documentElement, resources = {}, routes = rhumb.create();
+    var web = {}, resources = (nap_document.documentElement, {}), routes = rhumb.create(), middleware = [];
     return web.resource = function(name, ptn, handler) {
       return 1 == arguments.length ? resources[name] : (2 == arguments.length && (handler = ptn, 
-      ptn = name), resources[name] = {
+      ptn = name), handler = wrap(handler, middleware), resources[name] = {
         name: name,
         ptn: ptn,
         handler: handler
@@ -89,23 +116,22 @@ nap = function environment(nap_window) {
         };
       }), web);
     }, web.req = function(path, cb) {
-      var req = path;
-      isStr(path) && (req = {
-        uri: path,
-        method: "get",
-        headers: {
-          accept: "html"
-        }
-      }), req.web = web, req.method || (req.method = "get"), "get" == req.method && delete req.body, 
-      req.headers || (req.headers = {}), req.headers.accept || (req.headers.accept = "html");
-      var match = routes.match(req.uri);
-      return match ? (req.params = match.params, invoke(this, match.fn, req, cb), web) : void cb(req.uri + " not found");
-    }, web.view = function(val) {
-      return arguments.length ? (view = val, web) : view;
-    }, web.uri = function(name, params) {
-      var meta = resources[name];
-      if (!meta) throw new Error(name + " not found");
-      var parts = rhumb._parse(meta.ptn);
+      var req = isStr(path) ? {
+        uri: path
+      } : path, cb = cb || noop;
+      req.web = web, req.method || (req.method = "get"), "get" == req.method && delete req.body, 
+      req.headers || (req.headers = {}), req.headers.accept || (req.headers.accept = "application/x.nap.view");
+      var match = routes.match(req.uri) || {
+        fn: wrap(notFound, middleware)
+      };
+      return req.params = match.params, match.fn.call(null, req, cb), web;
+    }, web.use = function() {
+      return arguments.length ? (middleware = toArray(arguments).reverse().concat(middleware), 
+      web) : web;
+    }, web.uri = function(ptn, params) {
+      var meta = resources[ptn];
+      meta && (ptn = meta.ptn);
+      var parts = rhumb._parse(ptn);
       return parts.reduce(function(uri, part) {
         return "var" == part.type ? [ uri, params[part.input] ].join("/") : [ uri, part.input ].join("/");
       }, "");
@@ -114,14 +140,13 @@ nap = function environment(nap_window) {
   var nap = {
     environment: environment
   }, nap_window = nap_window || window, nap_document = nap_window.document;
-  nap.web = newWeb, nap.negotiate = {
+  nap.web = newWeb, nap.is = is, nap.into = into, nap.negotiate = {
     selector: bySelector,
-    ordered: byOrdered,
-    method: byMethod,
-    accept: byAcceptType,
-    invoke: invoke
-  }, nap.replies = {
-    view: repliesView
+    method: dispatcher(uses(checkMethod, setMethod), errorsWith(405)),
+    accept: dispatcher(uses(checkAcceptType, setContentType), errorsWith(415))
+  }, nap.responses = {
+    ok: ok,
+    error: error
   };
   var root = nap_document.documentElement, matchesSelector = root.matchesSelector || root.webkitMatchesSelector || root.mozMatchesSelector || root.msMatchesSelector || root.oMatchesSelector;
   return nap;

@@ -8,21 +8,27 @@
   
   <script type="text/javascript">
     function init(){
+
+      var ok = nap.responses.ok
+        , into = nap.into
       
-      function bar(req){
+      function bar(req, res){
         console.log("called", req.uri, req.params)
+        res(false, ok("bar called"))
       }
 
-      function foo(req){
+      function foo(req, res){
         console.log("called", req.uri, req.params)
+        res(false, ok("foo called"))
       }
 
-      function speak(req){
-        d3.select(this).text(req.params.name)
-      }
-
-      function peas(req, res){
-        res(false, ["a", "b", "c"])
+      function speak(req, res){
+        res(
+          false
+        , ok(function(node) {
+            d3.select(node).text(req.params.name)
+          })
+        )
       }
 
       // setup this web
@@ -30,11 +36,15 @@
         .resource("/foo/bar", bar)
         .resource("/foo/{thing}/wibble", foo)
         .resource("/speak/{name}", speak)
-        .resource("/peas", peas)
 
       // make some requests
-      web.req("/foo/bar")
-      web.req("/foo/chips/wibble")
+      web.req("/foo/bar", function(err, res) {
+        console.log(res.body)
+      })
+
+      web.req("/foo/chips/wibble", function(err, res) {
+        console.log(res.body)
+      })
 
       // create some views from requests
       d3.select(".message")
@@ -46,12 +56,9 @@
           ]
         )
         .enter().append("li")
-        .select(web.req)
-
-      // get some data from a request
-      web.req("/peas", function(err, res){
-        console.log(res)
-      })
+        .each(function(d, i) {
+          web.req(d, into(this))
+        })
     }
   </script>
   <title>Basic</title>

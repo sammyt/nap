@@ -10,30 +10,41 @@
     function init(){
       
       function speak(req, res){
-        d3.select(this).text(req.params.name)
-        res(false, "thanks " + req.params.name)
+
+        function view(node) {
+          d3.select(node).text(req.params.name)
+          node.addEventListener("update", onUpdate)
+
+          function onUpdate() {
+            console.log("update called")
+            node.removeEventListener("update")
+          }
+
+        }
+        
+        res(false, ok(view))
       }
 
       // setup this web
       var web = nap.web()
-        // set the default context
-        .view(d3.select(".top").node())
-        .resource("/speak/{name}", nap.replies.view(speak))
+        , ok = nap.responses.ok
+        , into = nap.into
 
-
-      // request into default context
-      web.req("/speak/sammy")
+      web.resource("/speak/{name}", speak)
 
       // view into specific context
-      var req = web.req.bind(d3.select(".bottom").node())
+      var top = d3.select(".top").node()
+      var bottom = d3.select(".bottom").node()
 
-      req("/speak/skyla", function(err, res){
-        // anything can reply
-        console.log(res)
+      web.req("/speak/skyla", function(err, res){
+        // response body is the view function
+        console.log(res.body)
+        res.body(top)
       })
 
-      // web.req still has .top as context
-      web.req("/speak/becky")
+      web.req("/speak/sammy", into(bottom))
+      web.req("/speak/sammy", into(bottom))
+      web.req("/speak/sammy", into(bottom))
     }
   </script>
   <title>Views</title>

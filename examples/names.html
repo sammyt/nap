@@ -10,8 +10,16 @@
     function init(){
     
       var web = nap.web()
-        .resource("weather", "/weather/{when}", function(req){
-          d3.select(this).text("snow " + req.params.when)
+        , ok = nap.responses.ok
+        , into = nap.into
+
+      web.resource("weather", "/weather/{when}", function(req, res){
+
+          function view(node) {
+            d3.select(node).text("snow " + req.params.when)
+          }
+
+          res(false, ok(view))
         })
 
       var days = [ "sunday" , "monday", "tuesday" , "wednesday" ]
@@ -19,12 +27,12 @@
       d3.select("ul").selectAll("li").data(days)
         .enter()
         .append("li")
-        .select(function(day){
+        .each(function(day){
           // form a uri from the resource name and params
           var uri = web.uri("weather", { when : day })
 
           // bind req call to li node
-          web.req.bind(this)(uri)
+          web.req(uri, into(this))
         })
       
     }
