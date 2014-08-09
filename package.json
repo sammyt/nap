@@ -1,8 +1,15 @@
 {
-  "name" : "nap"
-, "version" : "0.9.1"
-, "devDependencies": {
-    "grunt": "~0.4.2",
-    "grunt-contrib-uglify": "~0.2.7"  
+  "name": "nap",
+  "version": "0.9.1",
+  "devDependencies": {
+    "chai": "^1.9.1",
+    "d3": "^3.4.11",
+    "mocha": "^1.21.4",
+    "sinon": "^1.10.3",
+    "sinon-chai": "^2.5.0"
+  },
+  "dependencies": {
+    "domino": "^1.0.17",
+    "rhumb": "git://github.com/sammyt/rhumb.git"
   }
 }
