@@ -10,6 +10,6 @@
   },
   "dependencies": {
     "domino": "^1.0.17",
-    "rhumb": "git://github.com/sammyt/rhumb.git"
+    "rhumb": "git://github.com/sammyt/rhumb.git#restructure"
   }
 }
