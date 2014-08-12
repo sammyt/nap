@@ -1,3 +1,5 @@
+var rhumb = require('rhumb')
+
 var nap = { environment: {} }
   , nap_window = require('domino').createWindow() 
   , nap_document = nap_window.document
@@ -67,6 +69,7 @@ function error(code) {
 }
 
 function notFound(req, res) {
+  console.warn('404', req)
   res(null, error(404))
 }
 
@@ -230,15 +233,19 @@ function newWeb(){
     if(meta) ptn = meta.ptn
     var parts = rhumb._parse(ptn)
 
-    return parts.reduce(
-      function(uri, part){
-        if(part.type == "var"){
-          return [uri , params[part.input]].join("/")  
+    function insert(remaining){
+      return remaining.reduce(
+        function(uri, part){
+          if(part.type == "var"){
+            return [uri , params[part.input]].join("/")  
+          }
+          if(part.length) { return [uri, insert(part)].join('') }
+          return [uri , part.input].join("/")  
         }
-        return [uri , part.input].join("/")  
-      }
-    , ""
-    )
+      , ""
+      )
+    }
+    return insert(parts)
   }
 
   return web
