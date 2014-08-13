@@ -1,4 +1,5 @@
-var rhumb = require('rhumb')
+var rhumb    = require('rhumb')
+  , response = require('../response/response')
 
 var nap = { environment: {} }
   , nap_window = require('domino').createWindow() 
@@ -14,11 +15,6 @@ nap.negotiate = {
 , accept   : dispatcher(uses(checkAcceptType, setContentType), errorsWith(415))
 }
 
-nap.responses = {
-  ok : ok
-, error : error
-}
-
 var root = nap_document.documentElement
   , matchesSelector = root.matches
 
@@ -26,7 +22,7 @@ function noop(){}
 
 function into(node) {
   return function(err, res) {
-    if(res.statusCode != 200) return
+    if(res.status != 200) return
     if(res.headers.contentType && res.headers.contentType != "application/x.nap.view") return
     if(!isFn(res.body)) return
     if(!node) return
@@ -53,24 +49,16 @@ function toArray(args) {
   return Array.prototype.slice.call(args)
 }
 
-function ok(data) {
-  return {
-    body : data
-  , statusCode : 200
-  , headers : {}
-  }
-}
-
 function error(code) {
   return {
-    statusCode : code
+    status : code
   , headers : {}
   }
 }
 
 function notFound(req, res) {
   console.warn('404', req)
-  res(null, error(404))
+  res(error(404))
 }
 
 function dispatcher(wants, error) {
@@ -110,9 +98,9 @@ function checkMethod(req, method) {
 }
 
 function setMethod(type, res) {
-  return function(err, data) {
+  return function(data) {
     data.method = type
-    res(err, data)
+    res(data)
   }
 }
 
@@ -121,15 +109,15 @@ function checkAcceptType(req, type) {
 }
 
 function setContentType(type, res) {
-  return function(err, data) {
+  return function(data) {
     data.headers.contentType = type
-    res(err, data)
+    res(data)
   }
 }
 
 function errorsWith(code) {
   return function(req, res) {
-    res(null, error(code))
+    res(error(code))
     return true
   }
 }
@@ -172,8 +160,8 @@ function middleware(next, middle) {
   }
 }
 
-function newWeb(){
-  var web = {}
+function newWeb(host) {
+  var web = { get host() { return host } }
     , view = nap_document.documentElement
     , resources = {}
     , routes = rhumb.create()
@@ -217,8 +205,12 @@ function newWeb(){
 
     var match = routes.match(req.uri) || { fn : wrap(notFound, middleware) }
     req.params = match.params
-    match.fn.call(null, req, cb)
+    match.fn.call(null, req, respond)
     return web
+
+    function respond(res) {
+      response.isPrototypeOf(res)? cb(res) : cb(response(200, {}, res))
+    }
   }
 
   web.use = function() {
