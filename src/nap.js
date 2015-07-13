@@ -3,12 +3,13 @@ nap = (function environment(nap_window){
 var nap = { environment: environment }
   , nap_window = nap_window || window
   , nap_document = nap_window.document
-  
+
 nap.web = newWeb
 nap.is = is
 nap.into = into
+nap.uri = uri
 
-nap.negotiate = { 
+nap.negotiate = {
   selector : bySelector
 , method   : dispatcher(uses(checkMethod, setMethod), errorsWith(405))
 , accept   : dispatcher(uses(checkAcceptType, setContentType), errorsWith(415))
@@ -20,10 +21,10 @@ nap.responses = {
 }
 
 var root = nap_document.documentElement
-  , matchesSelector = root.matchesSelector 
-    || root.webkitMatchesSelector 
-    || root.mozMatchesSelector 
-    || root.msMatchesSelector 
+  , matchesSelector = root.matchesSelector
+    || root.webkitMatchesSelector
+    || root.mozMatchesSelector
+    || root.msMatchesSelector
     || root.oMatchesSelector
 
 function noop(){}
@@ -147,7 +148,7 @@ function bySelector(){
       }
     , []
     )
-  
+
   return function(node, cb){
     var called = false
       , cb = cb || noop
@@ -174,13 +175,30 @@ function middleware(next, middle) {
   }
 }
 
+function uri(ptn, params) {
+  var parts = rhumb._parse(ptn)
+  function insert(remaining){
+    return remaining.reduce(
+      function(uri, part){
+        if(part.type == "var"){
+          return [uri , params[part.input]].join("/")
+        }
+        if(part.length) { return [uri, insert(part)].join('') }
+        return [uri , part.input].join("/")
+      }
+    , ""
+    )
+  }
+  return insert(parts)
+}
+
 function newWeb(){
   var web = {}
     , view = nap_document.documentElement
     , resources = {}
     , routes = rhumb.create()
     , middleware = []
-  
+
   web.resource = function(name, ptn, handler){
     if(arguments.length == 1) return resources[name]
 
@@ -196,21 +214,28 @@ function newWeb(){
     , ptn : ptn
     , handler : handler
     }
-    
+
     routes.add(ptn, function(params){
       return {
-        fn : handler
+        name : name
+      , ptn : ptn
+      , fn : handler
       , params : params
       }
     })
     return web
   }
 
+  web.find = function(uri) {
+    if(!arguments.length) return
+    return routes.match(uri)
+  }
+
   web.req = function(path, cb){
-    
+
     var req = isStr(path) ? {uri: path} : path
       , cb = cb || noop
-    
+
     req.web = web
     req.method || (req.method = "get")
     req.method == "get" && (delete req["body"])
@@ -230,20 +255,9 @@ function newWeb(){
   }
 
   web.uri = function(ptn, params){
-
     var meta = resources[ptn]
-    if(meta) ptn = meta.ptn
-    var parts = rhumb._parse(ptn)
-
-    return parts.reduce(
-      function(uri, part){
-        if(part.type == "var"){
-          return [uri , params[part.input]].join("/")  
-        }
-        return [uri , part.input].join("/")  
-      }
-    , ""
-    )
+      , actualPtn = !!meta ? meta.ptn : ptn
+    return uri(actualPtn, params)
   }
 
   return web
