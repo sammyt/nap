@@ -1,3 +1,5 @@
+var rhumb = require('rhumb')
+
 var nap = { environment: {} }
   , nap_window = require('domino').createWindow() 
   , nap_document = nap_window.document
