@@ -2,23 +2,23 @@
 <head>
   <meta charset="utf-8">
   <title>Mocha Tests</title>
-  <link rel="stylesheet" href="../lib/mocha/mocha.css" />
+  <link rel="stylesheet" href="../node_modules/mocha/mocha.css" />
 </head>
 <body>
   <div id="mocha"></div>
-  <script src="../components/rhumb/dist/rhumb.js"></script>
-  <script src="../src/nap.js"></script>
+  <script src="../node_modules/rhumb/lib/rhumb.js"></script>
+  <script src="../lib/nap.js"></script>
   <script src="../node_modules/mocha/mocha.js"></script>
   <script src="../node_modules/chai/chai.js"></script>
-  <script src="../node_modules/sinon-chai/sinon-chai.js"></script>
-  <script src="../node_modules/sinon/sinon-1.5.2.js"></script>
+  <script src="../node_modules/sinon-chai/lib/sinon-chai.js"></script>
+  <script src="../node_modules/sinon/lib/sinon.js"></script>
   <script src="../node_modules/d3/d3.js"></script>
   <script>
     mocha.setup('bdd')
     chai.should()
     expect = chai.expect
   </script>
-  <script src="test.nap.js"></script>
+  <script src="../lib/test.js"></script>
   <script>
     mocha.run();
   </script>
