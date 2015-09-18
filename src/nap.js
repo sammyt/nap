@@ -1,8 +1,7 @@
-nap = (function environment(nap_window){
+var rhumb = require('rhumb')
 
-var nap = { environment: environment }
-  , nap_window = nap_window || window
-  , nap_document = nap_window.document
+var nap = { environment: {} }
+  , nap_document = window.document
   
 nap.web = newWeb
 nap.is = is
@@ -20,11 +19,7 @@ nap.responses = {
 }
 
 var root = nap_document.documentElement
-  , matchesSelector = root.matchesSelector 
-    || root.webkitMatchesSelector 
-    || root.mozMatchesSelector 
-    || root.msMatchesSelector 
-    || root.oMatchesSelector
+  , matchesSelector = root.matches
 
 function noop(){}
 
@@ -35,7 +30,8 @@ function into(node) {
     if(!isFn(res.body)) return
     if(!node) return
 
-    node.dispatchEvent && node.dispatchEvent(new CustomEvent("update"))
+    // TODO: This breaks d3; presumably because there's a discrepancy in domino CustomEvent vs. jsdom CustomEvent
+    // node.dispatchEvent && node.dispatchEvent(new CustomEvent("update"))
     res.body(node)
   }
 }
@@ -249,5 +245,4 @@ function newWeb(){
   return web
 }
 
-return nap
-})()
+module.exports = nap

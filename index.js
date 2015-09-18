@@ -1,3 +1,1 @@
-require('./nap')
-
-module.exports = nap
+module.exports = require('./src/nap')

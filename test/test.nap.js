@@ -1,3 +1,12 @@
+var d3     = require('d3')
+  , nap    = require('../src/nap')
+  , rhumb  = require('rhumb')
+  , sinon  = require('sinon')
+  , expect = require('chai').expect
+
+require('chai').should()
+require('chai').use(require('sinon-chai'))
+
 describe("Nap", function(){
 
 	describe("nap.web", function(){
@@ -84,7 +93,6 @@ describe("Nap", function(){
 
       cb.should.have.been.calledOnce
 
-      console.log("cb", cb.args[0])
       cb.args[0][1].body.should.equal("where am i?")
       cb.args[0][1].statusCode.should.equal(200)
     })
@@ -310,7 +318,7 @@ describe("Nap", function(){
       )
 
       web.req({uri: "/sausage", method:"send"}, cb)
-      console.log(cb.args[0])
+
       cb.should.have.been.calledOnce
       cb.args[0][1].statusCode.should.equal(405)
     })
@@ -421,7 +429,7 @@ describe("Nap", function(){
         .node()
     })
     afterEach(function(){
-      node.remove()
+      node.parentNode.removeChild(node)
     })
     it("should invoke the reponse body on a dom node", function() {
       var view = nap.into(node)
