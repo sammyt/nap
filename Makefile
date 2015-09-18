@@ -11,6 +11,10 @@ test: build
 	browserify $(wildcard test/*.js) $(wildcard test/**/*.js) > lib/test.js
 	open test/index.html
 
+examples: build
+	echo "--> Running examples ..."
+	open $(wildcard examples/*.html)
+
 node_modules: package.json
 	echo "--> Installing dependencies ..."
 	npm -q install
@@ -21,4 +25,4 @@ clean:
 all: clean build test
 
 .PHONY: clean all
-.SILENT: build test node_modules clean
+.SILENT: build test node_modules clean examples
