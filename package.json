@@ -1,6 +1,8 @@
 {
   "name": "nap",
   "version": "0.9.1",
+  "description": "Organizing applications into resources",
+  "main": "lib/nap.js",
   "devDependencies": {
     "chai": "^1.9.1",
     "d3": "^3.5.6",
@@ -8,8 +10,25 @@
     "sinon": "^1.10.3",
     "sinon-chai": "^2.5.0"
   },
+  "scripts": {
+    "test": "make test",
+    "preversion": "make all"
+  },
   "dependencies": {
     "browserify": "^11.1.0",
     "rhumb": "^0.3.1"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sammyt/nap.git"
+  },
+  "author": "Samuel Williams <sam@ziazoo.co.uk> (http://www.ziazoo.co.uk)",
+  "contributors": [
+    "Marcus Stade <marcus@stade.se> (http://madebystade.se)"
+  ],
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/sammyt/nap/issues"
+  },
+  "homepage": "https://github.com/sammyt/nap#readme"
 }
