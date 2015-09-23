@@ -8,8 +8,10 @@ build: node_modules src/nap.js
 
 test: build
 	echo "--> Running tests ..."
-	browserify $(wildcard test/*.js) $(wildcard test/**/*.js) > lib/test.js
-	open test/index.html
+	tape $(wildcard test/*.js) $(wildcard test/**/*.js) | tap-spec
+
+dev:
+	nodemon -q --watch src --watch test -x "make test || true"
 
 examples: build
 	echo "--> Running examples ..."
