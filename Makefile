@@ -8,7 +8,7 @@ build: node_modules src/nap.js
 
 test: build
 	echo "--> Running tests ..."
-	tape $(wildcard test/*.js) $(wildcard test/**/*.js) | tap-spec
+	tap --coverage $(wildcard test/*.js) $(wildcard test/**/*.js)
 
 dev:
 	nodemon -q --watch src --watch test -x "make test || true"

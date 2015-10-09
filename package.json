@@ -6,10 +6,11 @@
   "devDependencies": {
     "browserify": "^11.1.0",
     "d3": "^3.5.6",
-    "faucet": "0.0.1",
     "funkis": "^0.2.0",
+    "istanbul": "^0.3.22",
     "jsdom": "^6.5.1",
-    "nodemon": "^1.7.0"
+    "nodemon": "^1.7.0",
+    "tap": "^2.0.0"
   },
   "scripts": {
     "test": "make test",
