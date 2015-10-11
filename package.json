@@ -1,27 +1,26 @@
 {
-  "name": "nap",
-  "version": "0.9.1",
+  "name": "@websdk/nap",
+  "version": "0.9.2",
   "description": "Organizing applications into resources",
   "main": "lib/nap.js",
   "devDependencies": {
-    "browserify": "^11.1.0",
-    "d3": "^3.5.6",
-    "funkis": "^0.2.0",
-    "istanbul": "^0.3.22",
-    "jsdom": "^6.5.1",
-    "nodemon": "^1.7.0",
-    "tap": "^2.0.0"
-  },
-  "scripts": {
-    "test": "make test",
-    "preversion": "make all"
+    "browserify": "11.1.0",
+    "d3": "3.5.6",
+    "funkis": "0.2.0",
+    "istanbul": "0.3.22",
+    "jsdom": "6.5.1",
+    "nodemon": "1.7.0",
+    "tap": "2.0.0",
+    "tap-dot": "1.0.0",
+    "tape": "4.2.1",
+    "uglifyjs": "2.4.10"
   },
   "dependencies": {
-    "rhumb": "^0.3.1"
+    "rhumb": "0.3.1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sammyt/nap.git"
+    "url": "git+https://github.com/websdk/nap.git"
   },
   "author": "Samuel Williams <sam@ziazoo.co.uk> (http://www.ziazoo.co.uk)",
   "contributors": [
@@ -29,7 +28,7 @@
   ],
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/sammyt/nap/issues"
+    "url": "https://github.com/websdk/nap/issues"
   },
-  "homepage": "https://github.com/sammyt/nap#readme"
+  "homepage": "https://github.com/websdk/nap#readme"
 }
