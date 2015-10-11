@@ -27,6 +27,7 @@ test-dev: build
 release: clean build test
 	@npm version $(v)
 	@npm publish
+	@git push --tags
 
 examples: build
 	@open $(wildcard examples/*.html)
