@@ -1,7 +1,6 @@
 var rhumb = require('rhumb')
 
 var nap = { environment: {} }
-  , nap_document = window.document
   
 nap.web = newWeb
 nap.is = is
@@ -17,9 +16,6 @@ nap.responses = {
   ok : ok
 , error : error
 }
-
-var root = nap_document.documentElement
-  , matchesSelector = root.matches
 
 function noop(){}
 
@@ -37,7 +33,7 @@ function into(node) {
 }
 
 function is(n, s) {
-  return matchesSelector.call(n, s);
+  return n.matches(s)
 }
 
 function isFn(inst){
@@ -172,7 +168,6 @@ function middleware(next, middle) {
 
 function newWeb(){
   var web = {}
-    , view = nap_document.documentElement
     , resources = {}
     , routes = rhumb.create()
     , middleware = []

@@ -1,28 +1,37 @@
 PATH  := node_modules/.bin:$(PATH)
 SHELL := /bin/bash
 
-build: node_modules src/nap.js
-	echo "--> Building project ..."
-	mkdir -p lib
-	browserify src/nap.js --standalone nap -o lib/nap.js
+SRC = $(wildcard src/*.js)
+LIB = $(SRC:src/%.js=lib/%.js)
+TST = $(wildcard test/*.js) $(wildcard test/**/*.js)
+NPM = @npm install --local > /dev/null && touch node_modules
 
-test: build
-	echo "--> Running tests ..."
-	browserify $(wildcard test/*.js) $(wildcard test/**/*.js) > lib/test.js
-	open test/index.html
+v  ?= patch
 
-examples: build
-	echo "--> Running examples ..."
-	open $(wildcard examples/*.html)
+build: node_modules $(LIB)
+lib/%.js: src/%.js
+	@mkdir -p $(@D)
+	@browserify $< --standalone nap | uglifyjs -o $@
 
 node_modules: package.json
-	echo "--> Installing dependencies ..."
-	npm -q install
+	$(NPM)
+node_modules/%:
+	$(NPM)
+
+test: build
+	@tap --coverage $(TST)
+
+test-dev: build
+	@nodemon -q -x "(clear; tape $(TST) | tap-dot) || true"
+
+release: clean build test
+	@npm version $(v)
+	@npm publish
+
+examples: build
+	@open $(wildcard examples/*.html)
 
 clean:
-	rm -rf lib node_modules
+	@rm -rf $$(cat .gitignore)
 
-all: clean build test
-
-.PHONY: clean all
-.SILENT: build test node_modules clean examples
+.PHONY: build test test-dev release examples clean
