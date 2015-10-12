@@ -1,5 +1,5 @@
 var test = require('tape')
-  , nap  = require('../lib/nap')
+  , nap  = require('../src/nap')
   , dom  = require('jsdom').jsdom
   , d3   = require('d3')
 

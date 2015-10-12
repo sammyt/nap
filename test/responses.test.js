@@ -1,4 +1,4 @@
-var nap    = require('../lib/nap')
+var nap    = require('../src/nap')
   , test   = require('tape')
 
 test("Responding ok should yield a successful response", function(t) {
