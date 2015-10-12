@@ -21,7 +21,13 @@ node_modules/%:
 test: build
 	@tape $(TST)
 
-dev: build
+.nyc_output:
+	@nyc $(MAKE) test
+
+coverage: .nyc_output
+	@nyc report --reporter=text-lcov | coveralls
+
+dev:
 	@nodemon -q -x "(clear; nyc $(MAKE) test | tap-dot && nyc report) || true"
 
 release: clean build test
@@ -35,4 +41,4 @@ examples: build
 clean:
 	@rm -rf $$(cat .gitignore)
 
-.PHONY: build test test-dev release examples clean
+.PHONY: build test coverage dev release examples clean
