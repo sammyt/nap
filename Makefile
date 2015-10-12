@@ -35,10 +35,7 @@ release: clean build test
 	@npm publish
 	@git push --follow-tags
 
-examples: build
-	@open $(wildcard examples/*.html)
-
 clean:
 	@rm -rf $$(cat .gitignore)
 
-.PHONY: build test coverage dev release examples clean
+.PHONY: build test coverage dev release clean
