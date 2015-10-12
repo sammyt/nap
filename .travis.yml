@@ -1,0 +1,9 @@
+language: node_js
+node_js:
+  - "node"
+  - "iojs"
+  - "4"
+
+install: make clean build
+script: make test
+after_success: make coverage

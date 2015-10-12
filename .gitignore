@@ -1,2 +1,4 @@
-components
-node_modules/
+node_modules
+npm-debug.log
+.nyc_output
+lib

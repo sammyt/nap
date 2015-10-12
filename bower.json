@@ -1,7 +1,0 @@
-{
-  "name": "nap",
-  "version": "0.0.0",
-  "dependencies": {
-    "rhumb": "git://github.com/sammyt/rhumb.git"
-  }
-}

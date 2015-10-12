@@ -1,18 +1,15 @@
 nap
 ===
 
-REST for the client
+Organizing applications into resources.
 
 Developing
 ----------
 
+```bash
+make clean dev
 ```
-bower install
-open test/index.html
-```
 
+---
 
-License
--------
-
-License: http://sammyt.mit-license.org
+[LICENSE](LICENSE)
