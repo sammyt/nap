@@ -1,6 +1,6 @@
 {
   "name": "@websdk/nap",
-  "version": "0.9.6",
+  "version": "0.9.7",
   "description": "Organizing applications into resources",
   "main": "lib/nap.js",
   "devDependencies": {
