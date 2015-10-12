@@ -19,10 +19,10 @@ node_modules/%:
 	$(NPM)
 
 test: build
-	@tap --coverage $(TST)
+	@tape $(TST)
 
-test-dev: build
-	@nodemon -q -x "(clear; tape $(TST) | tap-dot) || true"
+dev: build
+	@nodemon -q -x "(clear; nyc $(MAKE) test | tap-dot && nyc report) || true"
 
 release: clean build test
 	@npm version $(v)
