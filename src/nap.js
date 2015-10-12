@@ -1,4 +1,4 @@
-var rhumb = require('rhumb')
+var rhumb = require('@websdk/rhumb')
 
 var nap = { environment: {} }
   
