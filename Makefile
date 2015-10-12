@@ -11,7 +11,7 @@ v  ?= patch
 build: node_modules $(LIB)
 lib/%.js: src/%.js
 	@mkdir -p $(@D)
-	@browserify $< --standalone nap | uglifyjs -o $@
+	@browserify $< --standalone $(@F:%.js=%) | uglifyjs -o $@
 
 node_modules: package.json
 	$(NPM)
@@ -21,13 +21,13 @@ node_modules/%:
 test: build
 	@tape $(TST)
 
-.nyc_output:
+.nyc_output: node_modules
 	@nyc $(MAKE) test
 
 coverage: .nyc_output
 	@nyc report --reporter=text-lcov | coveralls
 
-dev:
+dev: node_modules
 	@nodemon -q -x "(clear; nyc $(MAKE) test | tap-dot && nyc report) || true"
 
 release: clean build test
