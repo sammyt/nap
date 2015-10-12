@@ -1,44 +1,42 @@
 var test = require('tape')
   , nap  = require('../src/nap')
 
-  //   t.test("should should take callback for responses", function(t){
-  //     var web = nap.web()
-  //       , cb = sinon.spy()
+test("Requests should take callback for responses", function(t){
+  t.plan(2)
 
-  //     web.resource("/foo/bar", function(req, res){
-  //         res(null, nap.responses.ok("where am i?"))
-  //       }
-  //     )
+  var web = nap.web()
 
-  //     web.req("/foo/bar", cb)
+  web.resource("/foo/bar", function(req, res){
+      res(null, nap.responses.ok("where am i?"))
+    }
+  )
 
-  //     cb.should.have.been.calledOnce
+  web.req("/foo/bar", function(err, res) {
+    t.equal(res.body, "where am i?")
+    t.equal(res.statusCode, 200)
+  })
+})
 
-  //     cb.args[0][1].body.should.equal("where am i?")
-  //     cb.args[0][1].statusCode.should.equal(200)
-  //   })
-  //   t.test("be default requests have method of 'get'", function(t){
-  //     var web = nap.web()
-  //       , request
+test("Requests should by default have method of 'get'", function(t){
+  t.plan(1)
 
-  //     web.resource("/yo", function(req){
-  //       request = req
-  //     })
+  var web = nap.web()
 
-  //     web.req("/yo")
+  web.resource("/yo", function(req) {
+    t.equal(req.method, 'get')
+  })
 
-  //     expect(request.method).to.equal("get")
-  //   })
-  //   t.test("be default requests have accept type of 'application/x.nap.view'", function(t){
-  //     var web = nap.web()
-  //       , request
+  web.req("/yo")
+})
 
-  //     web.resource("/yo", function(req){
-  //       request = req
-  //     })
+test("Requests should by default have accept type of 'application/x.nap.view'", function(t){
+  t.plan(1)
+  
+  var web = nap.web()
 
-  //     web.req("/yo")
+  web.resource("/yo", function(req){
+    t.equal(req.headers.accept, 'application/x.nap.view')
+  })
 
-  //     expect(request.headers.accept).to.equal("application/x.nap.view")
-  //   })
-  // })
+  web.req("/yo")
+})
