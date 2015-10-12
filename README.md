@@ -12,4 +12,4 @@ make clean dev
 
 ---
 
-[LICENSE]: (LICENSE)
+[LICENSE](LICENSE)
