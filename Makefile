@@ -11,7 +11,7 @@ v  ?= patch
 build: node_modules $(LIB)
 lib/%.js: src/%.js
 	@mkdir -p $(@D)
-	@browserify $< --standalone $(@F:%.js=%) | uglifyjs -o $@
+	@browserify --exclude @websdk/rhumb $< --standalone $(@F:%.js=%) > $@
 
 node_modules: package.json
 	$(NPM)
